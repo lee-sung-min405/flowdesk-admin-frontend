@@ -1,0 +1,31 @@
+.container {
+	min-height: 100vh;
+	background: linear-gradient(135deg, #233d7b 0%, #2a5298 100%);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.card {
+	width: 400px;
+	border-radius: 16px;
+	box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+}
+
+.logoWrapper {
+	text-align: center;
+	margin-bottom: 24px;
+}
+
+.logoImg {
+	width: 100%;
+	max-width: 350px;
+	height: auto;
+	display: block;
+	margin: 0 auto 16px;
+}
+
+.signupText {
+	margin-top: 24px;
+	text-align: center;
+}

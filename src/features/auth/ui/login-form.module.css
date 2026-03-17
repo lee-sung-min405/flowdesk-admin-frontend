@@ -1,0 +1,8 @@
+.formContainer {
+  max-width: 350px;
+  margin: 0 auto;
+}
+
+.errorAlert {
+  margin-bottom: 16px;
+}

@@ -1,2 +1,6 @@
-// axios 인스턴스 예시
-export const axiosInstance = {};
+import axios from 'axios';
+
+export const axiosInstance = axios.create({
+  baseURL: import.meta.env.VITE_API_URL,
+  headers: { 'Content-Type': 'application/json' },
+});
