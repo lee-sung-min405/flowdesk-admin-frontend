@@ -1,6 +1,90 @@
 .formContainer {
   max-width: 350px;
   margin: 0 auto;
+  background: transparent;
+  padding: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.ant-form-item {
+  margin-bottom: 18px;
+}
+
+.ant-form-item-label > label {
+  font-weight: 500;
+  color: #233d7b;
+  font-size: 15px;
+  letter-spacing: -0.5px;
+}
+
+.ant-input, .ant-input-password {
+  background: #f7f7f7;
+  border-radius: 7px;
+  border: 1px solid #e3e8f0;
+  font-size: 15px;
+  padding: 10px 12px;
+  transition: border 0.2s;
+}
+.ant-input:focus, .ant-input-password:focus {
+  border: 1.5px solid #233d7b;
+  background: #fff;
+}
+
+.ant-input-affix-wrapper .ant-input-prefix {
+  color: #b0b8c1;
+  margin-right: 4px;
+}
+
+.ant-btn-primary {
+  background: #444;
+  border: none;
+  border-radius: 7px;
+  font-weight: 700;
+  font-size: 16px;
+  height: 48px;
+  margin-top: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+.ant-btn-primary:active, .ant-btn-primary:focus {
+  background: #222;
+}
+
+.ant-input-affix-wrapper .ant-input-prefix {
+  color: #b0b8c1;
+  margin-right: 4px;
+}
+.ant-form-item-label > label {
+  font-weight: 600;
+  color: #233d7b;
+  font-size: 15px;
+}
+
+.ant-input, .ant-input-password {
+  background: #f7f9fc;
+  border-radius: 8px;
+  border: 1px solid #e3e8f0;
+  font-size: 15px;
+  padding: 10px 12px;
+  transition: border 0.2s;
+}
+.ant-input:focus, .ant-input-password:focus {
+  border: 1.5px solid #233d7b;
+  background: #fff;
+}
+
+.ant-btn-primary {
+  background: linear-gradient(90deg, #233d7b 0%, #2a5298 100%);
+  border: none;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 16px;
+  height: 48px;
+  margin-top: 8px;
+  box-shadow: 0 2px 8px rgba(35,61,123,0.08);
+}
+.ant-btn-primary:active, .ant-btn-primary:focus {
+  background: linear-gradient(90deg, #1d3266 0%, #233d7b 100%);
 }
 
 .errorAlert {

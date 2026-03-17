@@ -1,4 +1,6 @@
 import { Form, Input, Button, Alert } from 'antd';
+import { UserOutlined, LockOutlined } from '@ant-design/icons';
+import { ApartmentOutlined } from '@ant-design/icons';
 import { useForm } from 'react-hook-form';
 import { Controller } from 'react-hook-form';
 import React from 'react';
@@ -47,30 +49,30 @@ export default function LoginForm() {
   return (
     <div ref={formRef}>
       <Form layout="vertical" onFinish={handleSubmit(onSubmit)} className={styles.formContainer}>
-        <Form.Item label="회사명" validateStatus={errors.tenantName ? 'error' : ''} help={errors.tenantName?.message}>
+        <Form.Item validateStatus={errors.tenantName ? 'error' : ''} help={errors.tenantName?.message}>
           <Controller
             name="tenantName"
             control={control}
             render={({ field }) => (
-              <Input {...field} placeholder="업체명" size="large" />
+              <Input {...field} placeholder="업체명" size="large" prefix={<ApartmentOutlined />} />
             )}
           />
         </Form.Item>
-        <Form.Item label="아이디" validateStatus={errors.userId ? 'error' : ''} help={errors.userId?.message}>
+        <Form.Item validateStatus={errors.userId ? 'error' : ''} help={errors.userId?.message}>
           <Controller
             name="userId"
             control={control}
             render={({ field }) => (
-              <Input {...field} placeholder="아이디" size="large" />
+              <Input {...field} placeholder="아이디" size="large" prefix={<UserOutlined />} />
             )}
           />
         </Form.Item>
-        <Form.Item label="비밀번호" validateStatus={errors.password ? 'error' : ''} help={errors.password?.message}>
+        <Form.Item validateStatus={errors.password ? 'error' : ''} help={errors.password?.message}>
           <Controller
             name="password"
             control={control}
             render={({ field }) => (
-              <Input.Password {...field} placeholder="비밀번호" size="large" />
+              <Input.Password {...field} placeholder="비밀번호" size="large" prefix={<LockOutlined />} />
             )}
           />
         </Form.Item>

@@ -1,4 +1,4 @@
-import { Card, Typography } from 'antd';
+import { Card } from 'antd';
 import logo from '/src/shared/assets/logo.png';
 import styles from './login-page.module.css';
 import { LoginForm } from '../../features/auth';
@@ -26,11 +26,12 @@ export default function LoginPage() {
 				</div>
 				<LoginForm />
 				<div className={styles.signupText}>
-					<Typography.Text type="secondary">
-						아직 계정이 없으신가요? <a href="#">회원가입</a>
-					</Typography.Text>
+					아직 계정이 없으신가요? <a href="#">회원가입</a>
 				</div>
 			</Card>
+			<div className={styles.copyright}>
+				Flowdesk Admin © 2026 All rights reserved.
+			</div>
 		</div>
 	);
 }
