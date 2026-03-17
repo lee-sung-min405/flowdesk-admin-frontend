@@ -7,8 +7,21 @@
   box-shadow: none;
 }
 
+@media (max-width: 600px) {
+  .formContainer {
+    max-width: 100%;
+    padding: 0 2vw;
+  }
+}
+
 .ant-form-item {
-  margin-bottom: 18px;
+  margin-bottom: 16px;
+}
+
+@media (max-width: 600px) {
+  .ant-form-item {
+    margin-bottom: 12px;
+  }
 }
 
 .ant-form-item-label > label {
@@ -25,6 +38,13 @@
   font-size: 15px;
   padding: 10px 12px;
   transition: border 0.2s;
+}
+
+@media (max-width: 600px) {
+  .ant-input, .ant-input-password {
+    font-size: 14px;
+    padding: 9px 8px;
+  }
 }
 .ant-input:focus, .ant-input-password:focus {
   border: 1.5px solid #233d7b;
@@ -45,6 +65,14 @@
   height: 48px;
   margin-top: 8px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+
+@media (max-width: 600px) {
+  .ant-btn-primary {
+    font-size: 15px;
+    height: 42px;
+    border-radius: 6px;
+  }
 }
 .ant-btn-primary:active, .ant-btn-primary:focus {
   background: #222;
