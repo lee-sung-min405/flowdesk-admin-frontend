@@ -108,8 +108,11 @@ flowdesk-admin-frontend/
    │  ├─ App.tsx                 # 루트 컴포넌트 (라우터 + QueryClientProvider)
    │  ├─ main.tsx                # ReactDOM 엔트리 (인터셉터 초기화 포함)
    │  ├─ ProtectedRoute.tsx      # 인증 보호 라우트 가드
+   │  ├─ layouts/                # 레이아웃 컴포넌트
+   │  │  ├─ main-layout.tsx     # 메인 레이아웃 (Sidebar + Header + Outlet)
+   │  │  └─ main-layout.module.css  # 레이아웃 스타일
    │  └─ styles/                 # 글로벌 스타일
-   │     ├─ global.css           # CSS 리셋 및 기본 스타일
+   │     ├─ global.css           # CSS 리셋, CSS Custom Properties 토큰, 접근성 스타일
    │     └─ antd-overrides.module.css  # Ant Design 오버라이드 (CSS Modules)
    │
    ├─ shared/                    # 공통 모듈 (API, 타입, 유틸, 에셋)
@@ -125,11 +128,19 @@ flowdesk-admin-frontend/
    │
    ├─ widgets/                   # 레이아웃 공통 UI 블록
    │  ├─ sidebar/
-   │  │  └─ sidebar.tsx          # 사이드바 컴포넌트
+   │  │  ├─ sidebar.tsx          # 사이드바 컴포넌트 (동적 메뉴, 접기/펼치기, 모바일 오버레이)
+   │  │  ├─ sidebar.module.css   # 사이드바 스타일
+   │  │  ├─ sidebar.type.ts      # SidebarProps 타입
+   │  │  └─ lib/
+   │  │     ├─ build-menu-items.ts  # MenuTree[] → AntD MenuItem[] 재귀 변환
+   │  │     └─ menu-icon-map.tsx    # pageName → 아이콘 매핑 테이블
    │  ├─ header/
-   │  │  └─ header.tsx           # 헤더 컴포넌트
+   │  │  ├─ header.tsx           # 헤더 컴포넌트 (토글, 브레드크럼, 알림, 프로필)
+   │  │  ├─ header.module.css    # 헤더 스타일
+   │  │  └─ header.type.ts       # HeaderProps 타입
    │  └─ breadcrumb/
-   │     └─ breadcrumb.tsx       # 브레드크럼 컴포넌트
+   │     ├─ breadcrumb.tsx       # 브레드크럼 컴포넌트 (동적 pathNameMap 기반)
+   │     └─ breadcrumb.module.css # 브레드크럼 스타일
    │
    ├─ features/                  # 도메인(기능)별 Feature Slice
    │  └─ auth/                   # 인증/권한 도메인
@@ -137,19 +148,23 @@ flowdesk-admin-frontend/
    │     ├─ api/                 # API 호출 함수
    │     │  ├─ endpoints.ts      # API 엔드포인트 상수 정의
    │     │  ├─ login.api.ts      # POST /auth/login
+   │     │  ├─ logout.api.ts     # POST /auth/logout
    │     │  ├─ me.api.ts         # GET /auth/me
    │     │  └─ refresh-token.api.ts  # POST /auth/refresh-token
    │     ├─ lib/                 # 비즈니스 로직 헬퍼
    │     │  ├─ auth-storage.ts   # localStorage 토큰/사용자 정보 관리
+   │     │  ├─ permission.ts     # 권한 체크 + 메뉴 필터링 + pathNameMap 빌드
    │     │  └─ setup-auth-interceptor.ts  # Axios 인터셉터에 auth 의존성 주입
    │     ├─ model/               # 상태 관리, 서비스, 커스텀 훅
-   │     │  ├─ auth.store.ts     # Zustand 인증 상태 스토어
+   │     │  ├─ auth.store.ts     # Zustand 인증 상태 스토어 (accessToken + me)
    │     │  ├─ auth.service.ts   # 로그인 성공 처리, 사용자 정보 관리
    │     │  ├─ login.schema.ts   # Zod 로그인 폼 유효성 스키마
    │     │  ├─ use-login.ts      # useLogin() React Query 뮤테이션 훅
+   │     │  ├─ use-logout.ts     # useLogout() 로그아웃 훅 (API + 로컬 상태 정리)
+   │     │  ├─ use-me.ts         # useMe() 사용자/메뉴/권한 훅 (Zustand 구독)
    │     │  └─ use-refresh-token.ts  # useRefreshToken() 뮤테이션 훅
    │     ├─ types/               # 도메인 타입 정의
-   │     │  └─ auth.type.ts      # LoginRequest/Response, MeResponse, MenuTree 등
+   │     │  └─ auth.type.ts      # LoginRequest/Response, MeResponse, MenuTree, 권한 타입 등
    │     └─ ui/                  # 도메인 UI 컴포넌트
    │        ├─ login-form.tsx    # 로그인 폼 (React Hook Form + Zod + Ant Design)
    │        └─ login-form.module.css  # 로그인 폼 스타일
@@ -247,7 +262,7 @@ features/{도메인명}/
 
 | Alias | 경로 | 사용 예시 |
 |-------|------|----------|
-| `@app/*` | `src/app/*` | `import { ProtectedRoute } from '@app/ProtectedRoute'` |
+| `@app/*` | `src/app/*` | `import MainLayout from '@app/layouts/main-layout'` |
 | `@shared/*` | `src/shared/*` | `import { axiosInstance } from '@shared/api/axios'` |
 | `@features/*` | `src/features/*` | `import { LoginForm } from '@features/auth'` |
 | `@pages/*` | `src/pages/*` | `import LoginPage from '@pages/login/login-page'` |
@@ -257,11 +272,11 @@ features/{도메인명}/
 
 ## 라우팅 구조
 
-| 경로 | 페이지 | 인증 필요 | 설명 |
-|------|--------|----------|------|
-| `/` | — | — | `/login`으로 리다이렉트 |
-| `/login` | LoginPage | 불필요 | 로그인 페이지 (로그인 상태 시 `/dashboard`로 리다이렉트) |
-| `/dashboard` | DashboardPage | **필요** | 대시보드 (ProtectedRoute로 보호) |
+| 경로 | 페이지 | 레이아웃 | 인증 필요 | 설명 |
+|------|--------|---------|----------|------|
+| `/` | — | — | — | `/login`으로 리다이렉트 |
+| `/login` | LoginPage | — | 불필요 | 로그인 페이지 (로그인 상태 시 `/dashboard`로 리다이렉트) |
+| `/dashboard` | DashboardPage | MainLayout | **필요** | 대시보드 (ProtectedRoute + MainLayout으로 보호) |
 
 ## 구현 현황
 
@@ -271,12 +286,19 @@ features/{도메인명}/
 | JWT 토큰 관리 | ✅ 완료 | Access/Refresh 토큰 localStorage 저장 + Zustand 동기화 |
 | 자동 토큰 갱신 | ✅ 완료 | DI 패턴 인터셉터 기반 401 응답 시 자동 리프레시 + 실패 시 로그아웃 |
 | 보호된 라우트 | ✅ 완료 | ProtectedRoute (Zustand + localStorage 이중 체크) |
+| 로그아웃 | ✅ 완료 | POST /auth/logout API 연동 + 로컬 상태 정리 |
+| 동적 메뉴 시스템 | ✅ 완료 | API menuTree + 권한 기반 필터링 + 아이콘 매핑 |
+| 권한 시스템 | ✅ 완료 | `{pageName}.{action}` 패턴, hasPermission/filterMenuTree/buildPathNameMap |
+| 메인 레이아웃 | ✅ 완료 | Sidebar + Header + Content (Layout Route + Outlet 패턴) |
+| 사이드바 | ✅ 완료 | 접기/펼치기, 모바일 오버레이, 동적 메뉴, 사용자 정보, 로그아웃 |
+| 헤더 | ✅ 완료 | 토글 버튼, 브레드크럼, 테넌트 뱃지, 알림 Popover, 프로필 Dropdown |
+| 브레드크럼 | ✅ 완료 | 동적 pathNameMap 기반 URL → 한국어 이름 매핑 |
+| CSS 토큰 체계 | ✅ 완료 | CSS Custom Properties 29개 (:root), focus-visible 접근성 |
 | 에러 처리 | ✅ 완료 | AxiosError 타입 래핑 + 에러 코드 매핑 + 한국어 메시지 |
-| 반응형 디자인 | ✅ 완료 | 모바일 대응 (600px 브레이크포인트) |
+| 반응형 디자인 | ✅ 완료 | 모바일 대응 (768px 브레이크포인트) |
 | Path Alias | ✅ 완료 | @app, @shared, @features, @pages, @widgets |
 | API 상수 관리 | ✅ 완료 | 엔드포인트 경로 상수 파일 분리 |
 | 대시보드 | 🔧 스캐폴드 | 기본 플레이스홀더 구현 |
-| 사이드바/헤더/브레드크럼 | 🔧 스캐폴드 | 위젯 플레이스홀더 구현 |
 
 ## 배포
 
