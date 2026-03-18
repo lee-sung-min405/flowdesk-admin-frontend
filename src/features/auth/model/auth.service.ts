@@ -10,6 +10,7 @@ export const authService = {
     try {
       const me = await meApi();
       authStorage.setMe(me);
+      useAuthStore.getState().setMe(me);
     } catch (e) {
       console.error('[auth] 사용자 정보 조회 실패:', e);
       authStorage.clearMe();

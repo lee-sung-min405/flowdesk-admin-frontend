@@ -65,3 +65,25 @@ export type RefreshTokenResponse = Pick<
   'accessToken' | 'expiresIn' | 'refreshToken' | 'refreshExpiresAt'
 >;
 
+// 로그아웃 요청/응답 타입
+export interface LogoutRequest {
+  refreshToken: string;
+}
+
+export interface LogoutResponse {
+  ok: boolean;
+}
+
+// 권한 관련 타입
+export type PermissionAction = 'read' | 'create' | 'update' | 'delete';
+export type Permissions = Record<string, boolean>;
+
+// useMe 훅 반환 타입
+export interface UseMeReturn {
+  me: MeResponse | null;
+  menuTree: MenuTree[];
+  pathNameMap: Record<string, string>;
+  permissions: Permissions;
+  hasPermission: (pageName: string, action: PermissionAction) => boolean;
+}
+

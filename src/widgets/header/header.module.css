@@ -1,0 +1,176 @@
+.header {
+  height: var(--header-height);
+  background: var(--color-bg-header);
+  border-bottom: 1px solid var(--color-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  flex-shrink: 0;
+  transition: box-shadow var(--transition-base);
+}
+
+.header[data-scrolled='true'] {
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+}
+
+/* --- 왼쪽: 토글 + 브레드크럼 --- */
+.left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.toggleBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: var(--color-text-secondary);
+  font-size: 18px;
+  transition: background var(--transition-base), color var(--transition-base);
+}
+
+.toggleBtn:hover {
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+/* --- 오른쪽: 테넌트 + 알림 + 프로필 --- */
+.right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* 테넌트 뱃지 */
+.tenantBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  border-radius: 6px;
+  background: #eef2ff;
+  color: var(--color-primary);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  letter-spacing: -0.3px;
+}
+
+/* 아이콘 버튼 (알림 등) */
+.iconBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: var(--color-text-secondary);
+  transition: background var(--transition-base), color var(--transition-base);
+}
+
+.iconBtn:hover {
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+.iconBtnIcon {
+  font-size: 18px;
+  color: inherit;
+}
+
+/* 프로필 드롭다운 트리거 */
+.profileBtn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 10px 4px 4px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  transition: background var(--transition-base);
+}
+
+.profileBtn:hover {
+  background: var(--color-bg);
+}
+
+.profileAvatar {
+  width: 30px;
+  height: 30px;
+  min-width: 30px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 13px;
+}
+
+.profileName {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-text);
+  white-space: nowrap;
+}
+
+@media (max-width: 768px) {
+  .header {
+    padding: 0 12px;
+  }
+
+  .tenantBadge {
+    display: none;
+  }
+
+  .profileName {
+    display: none;
+  }
+}
+
+/* --- 알림 패널 --- */
+.notificationPanel {
+  width: 280px;
+}
+
+.notificationHeader {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text);
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--color-border);
+  margin-bottom: 12px;
+}
+
+.notificationEmpty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 0;
+  color: var(--color-text-secondary);
+  font-size: 13px;
+}
+
+/* --- 프로필 드롭다운 내 테넌트 --- */
+.tenantMenuItem {
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  color: var(--color-primary) !important;
+  opacity: 1 !important;
+  cursor: default !important;
+}

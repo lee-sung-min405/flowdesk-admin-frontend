@@ -25,19 +25,17 @@ export default function LoginForm() {
   const [apiError, setApiError] = React.useState<{ message: string; detail: string } | null>(null);
   const navigate = useNavigate();
 
-  const onSubmit = (data: LoginRequest) => {
+  const onSubmit = async (data: LoginRequest) => {
     setApiError(null);
-    loginMutation.mutate(data, {
-      onSuccess: () => {
-        navigate('/dashboard');
-      },
-      onError: (error: unknown) => {
-        const message = getApiErrorMessage(error);
-        setApiError({ message, detail: '다시 입력해주세요.' });
-        reset();
-        setTimeout(() => setFocus('tenantName'), 0);
-      }
-    });
+    try {
+      await loginMutation.mutateAsync(data);
+      navigate('/dashboard');
+    } catch (error: unknown) {
+      const message = getApiErrorMessage(error);
+      setApiError({ message, detail: '다시 입력해주세요.' });
+      reset();
+      setTimeout(() => setFocus('tenantName'), 0);
+    }
   };
   return (
     <Form layout="vertical" onFinish={handleSubmit(onSubmit)} className={styles.formContainer}>

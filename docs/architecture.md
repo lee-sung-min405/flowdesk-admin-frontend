@@ -9,6 +9,8 @@
   - [2.1 엔트리포인트](#21-엔트리포인트)
   - [2.2 Provider 구조](#22-provider-구조)
   - [2.3 라우팅](#23-라우팅)
+  - [2.4 메인 레이아웃 구조](#24-메인-레이아웃-구조)
+  - [2.5 권한 기반 동적 메뉴](#25-권한-기반-동적-메뉴)
 - [3. 인증 아키텍처](#3-인증-아키텍처)
   - [3.1 로그인 플로우](#31-로그인-플로우)
   - [3.2 토큰 관리](#32-토큰-관리)
@@ -138,17 +140,96 @@ const queryClient = new QueryClient({
 
 ```tsx
 <Routes>
-  <Route path="/login"     element={<LoginPage />} />
-  <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
-  <Route path="/"          element={<Navigate to="/login" />} />
+  <Route path="/login" element={<LoginPage />} />
+
+  {/* 인증 필요 + MainLayout 적용 라우트 */}
+  <Route element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
+    <Route path="/dashboard" element={<DashboardPage />} />
+  </Route>
+
+  <Route path="/" element={<Navigate to="/login" />} />
 </Routes>
 ```
 
-| 경로 | 컴포넌트 | 접근 제어 | 비고 |
-|------|---------|----------|------|
-| `/` | `Navigate` | 없음 | `/login`으로 리다이렉트 |
-| `/login` | `LoginPage` | 공개 | 이미 로그인 시 `/dashboard`로 리다이렉트 |
-| `/dashboard` | `DashboardPage` | `ProtectedRoute` | 토큰 없으면 `/login`으로 리다이렉트 |
+**Layout Route 패턴:**
+- `MainLayout`은 `<Outlet />`을 통해 자식 라우트를 렌더링합니다
+- `ProtectedRoute`가 `MainLayout`을 감싸 인증 필요 라우트를 보호합니다
+- Sidebar, Header, Content 영역을 포함하는 통합 레이아웃 셸로 동작합니다
+- 향후 인증이 필요한 모든 페이지는 이 Layout Route 아래에 추가합니다
+
+| 경로 | 컴포넌트 | 레이아웃 | 접근 제어 | 비고 |
+|------|---------|---------|----------|------|
+| `/` | `Navigate` | — | 없음 | `/login`으로 리다이렉트 |
+| `/login` | `LoginPage` | — | 공개 | 이미 로그인 시 `/dashboard`로 리다이렉트 |
+| `/dashboard` | `DashboardPage` | `MainLayout` | `ProtectedRoute` | 토큰 없으면 `/login`으로 리다이렉트 |
+
+### 2.4 메인 레이아웃 구조
+
+```
+┌──────────────────────────────────────────────────────┐
+│  MainLayout (Layout Route + Outlet)                  │
+├──────────┬───────────────────────────────────────────┤
+│          │  Header (sticky)                          │
+│          │  ┌─ 토글 버튼 + Breadcrumb ─── 테넌트 │ 🔔 │ 프로필 ─┐ │
+│ Sidebar  │  └──────────────────────────────────────┘ │
+│ (fixed)  │                                           │
+│  ┌─────┐ │  Content (Outlet → 자식 페이지)            │
+│  │로고  │ │                                           │
+│  │메뉴  │ │     ┌──────────────────────────┐          │
+│  │     │ │     │  DashboardPage 등        │          │
+│  │유저  │ │     │  (Outlet으로 렌더링)      │          │
+│  │로그  │ │     └──────────────────────────┘          │
+│  │아웃  │ │                                           │
+│  └─────┘ │                                           │
+└──────────┴───────────────────────────────────────────┘
+```
+
+**`MainLayout` 컴포넌트 (`src/app/layouts/main-layout.tsx`):**
+- `collapsed` 상태를 단일 소스로 관리, Sidebar와 Header에 prop으로 전달
+- `<main data-scroll-area>` 속성을 통해 Header의 스크롤 감지 연동
+- CSS Custom Properties 기반 반응형 margin-left 전환
+
+**Sidebar (`src/widgets/sidebar/sidebar.tsx`):**
+- `useMe()` 훅으로 API menuTree 기반 동적 메뉴 렌더링
+- `buildMenuItems()` — MenuTree[] → Ant Design MenuItem[] 재귀 변환
+- `menuIconMap` — pageName → 아이콘 매핑 테이블 (확장 시 이 파일만 수정)
+- 접기/펼치기 + Tooltip, 모바일 오버레이 + 라우트 변경 시 자동 닫힘
+- 하단 사용자 정보(아바타, 이름, 이메일) + 로그아웃 버튼
+
+**Header (`src/widgets/header/header.tsx`):**
+- 사이드바 토글 + 동적 Breadcrumb
+- 테넌트 뱃지(corpName) + 알림 Popover + 프로필 Dropdown
+- `data-scrolled` 속성 기반 스크롤 감지 box-shadow
+
+**Breadcrumb (`src/widgets/breadcrumb/breadcrumb.tsx`):**
+- `useMe().pathNameMap` 기반 URL 세그먼트 → 한국어 이름 매핑
+- Home 아이콘 + 현재 경로 자동 파싱
+
+### 2.5 권한 기반 동적 메뉴
+
+서버 `/auth/me` 응답의 `menuTree`와 `permissions`를 기반으로 사용자별 메뉴를 동적 생성합니다:
+
+```
+┌────────────┐     ┌──────────────────┐     ┌──────────────────┐     ┌────────────────┐
+│ /auth/me   │────▶│ MeResponse       │────▶│ filterMenuTree() │────▶│ buildMenuItems │
+│ API 응답    │     │ .menuTree[]      │     │ (read 권한 필터)  │     │ → MenuItem[]   │
+│            │     │ .permissions{}   │     │ (재귀 + 정렬)     │     │ (AntD 메뉴)    │
+└────────────┘     └──────────────────┘     └──────────────────┘     └────────────────┘
+```
+
+**권한 유틸 (`src/features/auth/lib/permission.ts`):**
+
+| 함수 | 설명 |
+|------|------|
+| `hasPermission(permissions, pageName, action)` | `{pageName}.{action}` 키 기반 권한 체크 |
+| `hasReadPermission(permissions, pageName)` | read 권한 단축 함수 |
+| `filterMenuTree(menuTree, permissions)` | read 권한 없는 메뉴 재귀 제거 + order 정렬 |
+| `buildPathNameMap(menuTree)` | path → displayName 플랫 맵 생성 (breadcrumb용) |
+
+**`useMe()` 훅 (`src/features/auth/model/use-me.ts`):**
+- Zustand store의 `me` 상태를 반응적으로 구독
+- `filterMenuTree()`, `buildPathNameMap()`, `hasPermission()` 파생 데이터 제공
+- Sidebar, Header, Breadcrumb에서 공통 사용
 
 ---
 
@@ -159,7 +240,7 @@ const queryClient = new QueryClient({
 ```
 ┌──────────────┐     ┌──────────────┐     ┌──────────────┐     ┌──────────────┐
 │   사용자      │     │  LoginForm    │     │  useLogin()   │     │  서버 API     │
-│  입력 폼      │────▶│  Zod 검증     │────▶│  mutate()     │────▶│ POST /auth/  │
+│  입력 폼      │────▶│  Zod 검증     │────▶│mutateAsync() │────▶│ POST /auth/  │
 │              │     │              │     │              │     │    login      │
 └──────────────┘     └──────────────┘     └──────┬───────┘     └──────┬───────┘
                                                   │                     │
@@ -168,6 +249,7 @@ const queryClient = new QueryClient({
                                           ┌───────▼───────┐
                                           │ authService.   │
                                           │ loginSuccess() │
+                                          │  (await 완료)  │
                                           └───────┬───────┘
                                                   │
                               ┌────────────────────┼────────────────────┐
@@ -178,25 +260,37 @@ const queryClient = new QueryClient({
                      │ (localStorage) │  │ (Zustand)       │  │ → setMe()      │
                      └────────────────┘  └─────────────────┘  └────────────────┘
                                                                        │
-                                                                       ▼
-                                                              ┌────────────────┐
-                                                              │ navigate(      │
-                                                              │  '/dashboard') │
-                                                              └────────────────┘
+                                                              ┌────────▼────────┐
+                                                              │ authStorage.    │
+                                                              │   setMe()       │
+                                                              │ useAuthStore.   │
+                                                              │   setMe()       │
+                                                              └────────┬────────┘
+                                                                       │
+                                                              ┌────────▼────────┐
+                                                              │ mutateAsync     │
+                                                              │ resolve → 이후  │
+                                                              │ navigate(       │
+                                                              │  '/dashboard')  │
+                                                              └─────────────────┘
 ```
 
 **상세 단계:**
 
 1. 사용자가 **업체명(tenantName)**, **아이디(userId)**, **비밀번호(password)** 입력
 2. `LoginForm`에서 **Zod 스키마** 검증 (`loginSchema`)
-3. `useLogin()` 훅의 `mutate()` 호출 → `loginApi()` → `POST /auth/login`
+3. `useLogin()` 훅의 `mutateAsync()` 호출 → `loginApi()` → `POST /auth/login`
 4. 서버 응답(`LoginResponse`) 수신:
    - `accessToken`, `refreshToken`, `expiresIn`, `refreshExpiresAt`, `user` 정보 포함
-5. `authService.loginSuccess()` 실행:
+5. `authService.loginSuccess()` 실행 (**await 완료 후 navigate**):
    - `authStorage.setTokens()` → localStorage에 토큰 저장
    - `useAuthStore.setAccessToken()` → Zustand에 토큰 동기화
-   - `meApi()` 호출 → 사용자 프로필, 역할, 권한, 메뉴 트리 조회 → localStorage에 캐시
-6. 성공 시 `/dashboard`로 네비게이션
+   - `meApi()` 호출 → 사용자 프로필, 역할, 권한, 메뉴 트리 조회
+   - `authStorage.setMe()` → localStorage에 캐시
+   - `useAuthStore.setMe()` → **Zustand에 me 동기화 (반응성 확보)**
+6. `mutateAsync` promise resolve 후 `/dashboard`로 네비게이션
+
+> **중요**: `mutateAsync`를 사용하여 me 데이터 저장이 완료된 후에 navigate가 실행됩니다. `mutate` + 콜백 방식에서는 me API가 완료되기 전에 navigate가 실행되어 메뉴/사용자 정보가 보이지 않는 문제가 있었습니다.
 
 ### 3.2 토큰 관리
 
@@ -207,7 +301,8 @@ const queryClient = new QueryClient({
 | Access Token | localStorage | `accessToken` | API 요청 인증 헤더 |
 | Refresh Token | localStorage | `refreshToken` | Access Token 갱신 |
 | Access Token | Zustand (`useAuthStore`) | `accessToken` | 컴포넌트 반응성 |
-| 사용자 정보 | localStorage | `me` | 사용자 프로필/권한/메뉴 캐시 |
+| 사용자 정보 | localStorage | `me` | 사용자 프로필/권한/메뉴 캐시 (영속) |
+| 사용자 정보 | Zustand (`useAuthStore`) | `me` | 사용자 프로필/권한/메뉴 (반응성) |
 
 **`authStorage` API:**
 
@@ -343,6 +438,23 @@ type RefreshTokenRequest = { refreshToken: string };
 type RefreshTokenResponse = Pick<LoginResponse,
   'accessToken' | 'expiresIn' | 'refreshToken' | 'refreshExpiresAt'
 >;
+
+// 로그아웃
+interface LogoutRequest { refreshToken: string }
+interface LogoutResponse { ok: boolean }
+
+// 권한 관련
+type PermissionAction = 'read' | 'create' | 'update' | 'delete';
+type Permissions = Record<string, boolean>;
+
+// useMe 훅 반환 타입
+interface UseMeReturn {
+  me: MeResponse | null;
+  menuTree: MenuTree[];                  // 권한 필터링된 메뉴 트리
+  pathNameMap: Record<string, string>;   // breadcrumb용 경로→이름 맵
+  permissions: Permissions;
+  hasPermission: (pageName: string, action: PermissionAction) => boolean;
+}
 ```
 
 ### 3.6 인증 Feature Slice 구조
@@ -352,8 +464,11 @@ features/auth/
 ├─ index.ts                    # Public API — 외부 노출 인터페이스
 │   ├─ export LoginForm             (UI 컴포넌트)
 │   ├─ export useLogin              (커스텀 훅)
+│   ├─ export useLogout             (커스텀 훅)
+│   ├─ export useMe                 (커스텀 훅)
 │   ├─ export loginSchema           (Zod 스키마)
-│   ├─ export loginApi              (API 함수)
+│   ├─ export hasPermission, hasReadPermission, filterMenuTree, buildPathNameMap (권한 유틸)
+│   ├─ export loginApi, logoutApi   (API 함수)
 │   ├─ export meApi                 (API 함수)
 │   ├─ export refreshTokenApi       (API 함수)
 │   ├─ export setupAuthAxiosInterceptor  (인터셉터 초기화)
@@ -363,25 +478,29 @@ features/auth/
 ├─ api/
 │   ├─ endpoints.ts            API 엔드포인트 경로 상수 (AUTH_ENDPOINTS)
 │   ├─ login.api.ts            POST /auth/login
+│   ├─ logout.api.ts           POST /auth/logout
 │   ├─ me.api.ts               GET /auth/me
 │   └─ refresh-token.api.ts    POST /auth/refresh-token
 │
 ├─ lib/
 │   ├─ auth-storage.ts         localStorage 래퍼 (토큰 + 사용자 정보 CRUD, JSON.parse 안전 처리)
+│   ├─ permission.ts           권한 체크 + 메뉴 필터링 + pathNameMap 빌드 유틸
 │   └─ setup-auth-interceptor.ts  Axios 인터셉터에 auth 의존성 주입 (DI 브릿지)
 │
 ├─ model/
-│   ├─ auth.store.ts           Zustand 스토어 (accessToken 상태)
+│   ├─ auth.store.ts           Zustand 스토어 (accessToken + me 상태, localStorage hydration)
 │   ├─ auth.service.ts         비즈니스 로직 (로그인 성공 처리 오케스트레이션)
 │   ├─ login.schema.ts         Zod 유효성 스키마 (tenantName, userId, password)
 │   ├─ use-login.ts            useMutation 기반 로그인 훅 (AxiosError<ErrorResponse> 타입)
+│   ├─ use-logout.ts           로그아웃 훅 (API 호출 + 로컬 상태 정리 + 리다이렉트)
+│   ├─ use-me.ts               사용자 정보 훅 (Zustand 구독 + 메뉴/권한 파생 데이터)
 │   └─ use-refresh-token.ts    useMutation 기반 토큰 갱신 훅 (AxiosError<ErrorResponse> 타입)
 │
 ├─ types/
-│   └─ auth.type.ts            인증 관련 TypeScript 타입/인터페이스
+│   └─ auth.type.ts            인증/권한 관련 TypeScript 타입/인터페이스
 │
 └─ ui/
-    ├─ login-form.tsx          로그인 폼 (React Hook Form reset/setFocus + Ant Design)
+    ├─ login-form.tsx          로그인 폼 (React Hook Form + mutateAsync + Ant Design)
     └─ login-form.module.css   로그인 폼 스타일 (CSS Modules)
 ```
 
@@ -418,9 +537,20 @@ export function useLogin() {
     },
   });
 }
+
+// 호출부에서는 mutateAsync를 사용하여 완료를 보장
+const onSubmit = async (data: LoginRequest) => {
+  try {
+    await loginMutation.mutateAsync(data);
+    navigate('/dashboard');  // me 저장 완료 후 navigate
+  } catch (error) {
+    // 에러 처리
+  }
+};
 ```
 
 - **에러 타입**: `AxiosError<ErrorResponse>`로 래핑하여 `error.response?.data`에서 타입 안전하게 에러 상세 정보 접근
+- **mutateAsync**: `mutate` + 콜백 대신 `mutateAsync` + `await`를 사용하여 비동기 처리 순서를 보장합니다. 이는 `authService.loginSuccess()` 내 me API 호출이 완료된 후에 navigate가 실행되도록 합니다.
 ```
 
 ### 4.2 클라이언트 상태 — Zustand
@@ -431,16 +561,20 @@ export function useLogin() {
 ```typescript
 // 스토어 정의
 const useAuthStore = create<AuthState>((set) => ({
-  accessToken: null,
+  accessToken: authStorage.getAccessToken(),  // localStorage에서 초기 hydration
+  me: authStorage.getMe(),                    // localStorage에서 초기 hydration
   setAccessToken: (accessToken) => set({ accessToken }),
-  clearAuth: () => set({ accessToken: null }),
+  setMe: (me) => set({ me }),
+  clearAuth: () => set({ accessToken: null, me: null }),
 }));
 
 // 컴포넌트 내 사용
 const token = useAuthStore((state) => state.accessToken);
+const me = useAuthStore((state) => state.me);  // me 데이터 반응적 구독
 
 // React 외부 사용 (인터셉터 등)
 useAuthStore.getState().setAccessToken(newToken);
+useAuthStore.getState().setMe(meData);
 ```
 
 ### 4.3 영속 상태 — localStorage
@@ -614,6 +748,7 @@ interface ErrorResponse {
 // src/features/auth/api/endpoints.ts
 export const AUTH_ENDPOINTS = {
   LOGIN: '/auth/login',
+  LOGOUT: '/auth/logout',
   ME: '/auth/me',
   REFRESH_TOKEN: '/auth/refresh-token',
 } as const;
@@ -627,6 +762,7 @@ export const AUTH_ENDPOINTS = {
 | 메서드 | 경로 | 설명 | 요청 타입 | 응답 타입 |
 |--------|------|------|----------|----------|
 | POST | `/auth/login` | 로그인 | `LoginRequest` | `LoginResponse` |
+| POST | `/auth/logout` | 로그아웃 (토큰 폐기) | `LogoutRequest` | `LogoutResponse` |
 | GET | `/auth/me` | 현재 사용자 정보 조회 | — | `MeResponse` |
 | POST | `/auth/refresh-token` | 토큰 갱신 | `RefreshTokenRequest` | `RefreshTokenResponse` |
 
@@ -636,17 +772,19 @@ export const AUTH_ENDPOINTS = {
 
 ### 6.1 컴포넌트 라이브러리
 
-- **Ant Design 6.3.3**: 주요 UI 컴포넌트 (Form, Input, Button, Card, Alert 등)
-- **@ant-design/icons 6.1.0**: 아이콘 (UserOutlined, LockOutlined, ApartmentOutlined)
+- **Ant Design 6.3.3**: 주요 UI 컴포넌트 (Form, Input, Button, Card, Alert, Menu, Badge, Dropdown, Popover, Tooltip, Breadcrumb 등)
+- **@ant-design/icons 6.1.0**: 아이콘 (UserOutlined, LockOutlined, MenuFoldOutlined, BellOutlined 등)
 - **Recharts 3.8.0**: 차트 컴포넌트 (대시보드 확장용)
 
 ### 6.2 스타일링 방식
 
 | 방식 | 파일 패턴 | 용도 |
 |------|----------|------|
+| **CSS Custom Properties** | `global.css :root` | 디자인 토큰 (색상, 크기, 전환) |
 | **CSS Modules** | `*.module.css` | 컴포넌트 스코프 스타일 (충돌 방지) |
-| **글로벌 CSS** | `global.css` | CSS 리셋, 기본 레이아웃 |
+| **글로벌 CSS** | `global.css` | CSS 리셋, 기본 레이아웃, 접근성 |
 | **Ant Design 오버라이드** | `antd-overrides.module.css` | 라이브러리 스타일 커스터마이징 |
+| **data-* 속성** | `data-collapsed`, `data-scrolled` 등 | 상태 기반 조건부 스타일링 |
 
 **CSS Modules 사용 패턴:**
 
@@ -658,27 +796,65 @@ import styles from './login-form.module.css';
 </Form>
 ```
 
+**data-* 속성 기반 상태 스타일링:**
+
+```css
+/* 사이드바 접기/펼치기 */
+.sidebar[data-collapsed='true'] { width: var(--sidebar-collapsed-width); }
+
+/* 헤더 스크롤 그림자 */
+.header[data-scrolled='true'] { box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08); }
+```
+
 ### 6.3 반응형 디자인
 
-- **주요 브레이크포인트**: `600px` (모바일/데스크톱 분기)
-- **접근 방식**: 데스크톱 우선, `@media (max-width: 600px)`으로 모바일 조정
+- **주요 브레이크포인트**: `768px` (모바일/데스크톱 분기, 600px 제거)
+- **접근 방식**: 데스크톱 우선, `@media (max-width: 768px)`으로 모바일 조정
 - 로그인 페이지에 `100dvh` 사용으로 모바일 뷰포트 대응
+- 모바일 사이드바: 오버레이 + 슬라이드 방식, 라우트 변경 시 자동 닫힘
+- 모바일 헤더: 테넌트 뱃지 숨김, 프로필 이름 숨김
 
-### 6.4 디자인 토큰
+### 6.4 디자인 토큰 (CSS Custom Properties)
 
-| 토큰 | 값 | 용도 |
-|------|-----|------|
-| Primary Color | `#233d7b` | 메인 브랜드 컬러 (다크 블루) |
-| Primary Gradient | `linear-gradient(90deg, #233d7b, #2a5298)` | 버튼 그라데이션 |
-| Active Color | `#1d3266` | 버튼 활성 상태 |
-| Background | `#ededed` | 페이지 배경 |
-| Card Background | `#fff` | 카드 배경 |
-| Input Background | `#f7f7f7` | 입력 필드 배경 |
-| Border Color | `#e3e8f0` | 입력 필드 테두리 |
-| Border Radius (Card) | `14px` / `10px` (모바일) | 카드 둥근 모서리 |
-| Border Radius (Button) | `8px` / `6px` (모바일) | 버튼 둥근 모서리 |
-| Font Family | `'Pretendard', 'Noto Sans KR', Arial, sans-serif` | 기본 폰트 |
-| Card Top Border | `6px solid #233d7b` | 카드 상단 강조 |
+모든 디자인 토큰은 `:root`에 CSS Custom Properties로 정의되어 있으며, 컴포넌트에서 `var()` 함수로 참조합니다:
+
+**전역 색상 토큰:**
+
+| 변수명 | 값 | 용도 |
+|--------|-----|------|
+| `--color-primary` | `#233d7b` | 메인 브랜드 컬러 |
+| `--color-primary-dark` | `#1d3266` | 버튼 활성 상태 |
+| `--color-primary-light` | `#2a5298` | 버튼 호버 상태 |
+| `--color-accent` | `#3b82f6` | 강조 컬러 (로고, 아바타, focus-visible) |
+| `--color-bg` | `#f5f5f5` | 페이지 배경 |
+| `--color-bg-sidebar` | `#001529` | 사이드바 배경 (다크 테마) |
+| `--color-bg-header` | `#ffffff` | 헤더 배경 |
+| `--color-text` | `#1a1a1a` | 기본 텍스트 |
+| `--color-text-secondary` | `#6b7280` | 보조 텍스트 |
+| `--color-border` | `#e5e7eb` | 테두리 |
+
+**사이드바 전용 토큰:**
+
+| 변수명 | 값 | 용도 |
+|--------|-----|------|
+| `--sidebar-text` | `rgba(255,255,255,0.85)` | 사이드바 텍스트 |
+| `--sidebar-text-muted` | `rgba(255,255,255,0.45)` | 사이드바 보조 텍스트 |
+| `--sidebar-text-dim` | `rgba(255,255,255,0.55)` | 로그아웃 버튼 텍스트 |
+| `--sidebar-text-hover` | `rgba(255,255,255,0.75)` | 호버 텍스트 |
+| `--sidebar-hover-bg` | `rgba(255,255,255,0.08)` | 호버 배경 |
+| `--sidebar-subtle-bg` | `rgba(255,255,255,0.06)` | 접기 버튼 배경 |
+| `--sidebar-border` | `rgba(255,255,255,0.08)` | 구분선 |
+| `--sidebar-scrollbar` | `rgba(255,255,255,0.15)` | 스크롤바 |
+
+**레이아웃 토큰:**
+
+| 변수명 | 값 | 용도 |
+|--------|-----|------|
+| `--font-family` | `'Pretendard', 'Noto Sans KR', Arial, sans-serif` | 기본 폰트 |
+| `--sidebar-width` | `240px` | 사이드바 펼침 너비 |
+| `--sidebar-collapsed-width` | `64px` | 사이드바 접힘 너비 |
+| `--header-height` | `56px` | 헤더 높이 |
+| `--transition-base` | `0.2s ease` | 기본 전환 애니메이션 |
 
 ---
 
@@ -900,10 +1076,13 @@ export default function UserPage() {
 ### Step 6: 라우트 등록
 
 ```tsx
-// src/app/App.tsx — Routes에 추가
+// src/app/App.tsx — MainLayout 내부 Route에 추가
 import UserPage from '@pages/user/user-page';
 
-<Route path="/users" element={
-  <ProtectedRoute><UserPage /></ProtectedRoute>
-} />
+<Route element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
+  <Route path="/dashboard" element={<DashboardPage />} />
+  <Route path="/users" element={<UserPage />} />
+</Route>
 ```
+
+> Layout Route 패턴을 사용하므로 `ProtectedRoute`와 `MainLayout`으로 감싸진 부모 Route 안에 자식 Route를 추가합니다.
