@@ -19,7 +19,15 @@
     "allowImportingTsExtensions": true,
     "moduleDetection": "force",
     "noUnusedLocals": true,
-    "noUnusedParameters": true
+    "noUnusedParameters": true,
+    "baseUrl": ".",
+    "paths": {
+      "@app/*": ["src/app/*"],
+      "@shared/*": ["src/shared/*"],
+      "@features/*": ["src/features/*"],
+      "@pages/*": ["src/pages/*"],
+      "@widgets/*": ["src/widgets/*"]
+    }
   },
-  "include": ["src", "vite-env.d.ts", "src/shared/types", "src/shared/utils"]
+  "include": ["src", "vite-env.d.ts"]
 }

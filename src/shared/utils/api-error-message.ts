@@ -2,7 +2,7 @@
 // 모든 API 에러 응답을 일관적으로 처리
 
 import axios from 'axios';
-import type { ErrorResponse } from '../../shared/types/error-response.type';
+import type { ErrorResponse } from '@shared/types/error-response.type';
 
 // 에러 메시지 매핑 테이블
 const ERROR_MESSAGE_MAP: Record<string, string> = {

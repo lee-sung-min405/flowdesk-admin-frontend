@@ -1,18 +1,19 @@
 import { Card } from 'antd';
 import styles from './login-page.module.css';
-import { LoginForm } from '../../features/auth';
+import { LoginForm } from '@features/auth';
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { authStorage } from '../../features/auth/lib/auth-storage';
+import { useAuthStore } from '@features/auth/model/auth.store';
+import { authStorage } from '@features/auth/lib/auth-storage';
 
 export default function LoginPage() {
 	const navigate = useNavigate();
+	const storeToken = useAuthStore((state) => state.accessToken);
 	useEffect(() => {
-		// accessToken이 있으면 로그인된 상태로 간주
-		if (authStorage.getAccessToken()) {
+		if (storeToken || authStorage.getAccessToken()) {
 			navigate('/dashboard', { replace: true });
 		}
-	}, [navigate]);
+	}, [navigate, storeToken]);
 	return (
 		<div className={styles.container}>
 			<Card className={styles.card}>

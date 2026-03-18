@@ -26,8 +26,6 @@ export interface MenuTree {
   order: number;
   children: MenuTree[];
 }
-// Auth 타입 예시
-export type AuthType = {};
 
 // 로그인 요청 타입
 export interface LoginRequest {

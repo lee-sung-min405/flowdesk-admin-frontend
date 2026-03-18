@@ -1,9 +1,8 @@
-import type { MeResponse } from '../types/auth.type';
-const ME_KEY = 'me';
-import type { LoginResponse } from '../types/auth.type';
+import type { LoginResponse, MeResponse } from '../types/auth.type';
 
 const ACCESS_TOKEN_KEY = 'accessToken';
 const REFRESH_TOKEN_KEY = 'refreshToken';
+const ME_KEY = 'me';
 
 export const authStorage = {
   setTokens: (data: Pick<LoginResponse, 'accessToken' | 'refreshToken'>) => {
@@ -20,8 +19,14 @@ export const authStorage = {
     localStorage.setItem(ME_KEY, JSON.stringify(me));
   },
   getMe: (): MeResponse | null => {
-    const me = localStorage.getItem(ME_KEY);
-    return me ? JSON.parse(me) : null;
+    const raw = localStorage.getItem(ME_KEY);
+    if (!raw) return null;
+    try {
+      return JSON.parse(raw) as MeResponse;
+    } catch {
+      localStorage.removeItem(ME_KEY);
+      return null;
+    }
   },
   clearMe: () => {
     localStorage.removeItem(ME_KEY);
