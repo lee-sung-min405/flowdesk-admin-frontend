@@ -146,63 +146,116 @@ flowdesk-admin-frontend/
    │     └─ breadcrumb.module.css # 브레드크럼 스타일
    │
    ├─ features/                  # 도메인(기능)별 Feature Slice
-   │  └─ auth/                   # 인증/권한 도메인
-   │     ├─ index.ts             # Public API (외부 노출 인터페이스)
-   │     ├─ api/                 # API 호출 함수
-   │     │  ├─ endpoints.ts      # API 엔드포인트 상수 정의
-   │     │  ├─ login.api.ts      # POST /auth/login
-   │     │  ├─ logout.api.ts     # POST /auth/logout
-   │     │  ├─ logout-all.api.ts # POST /auth/logout-all
-   │     │  ├─ me.api.ts         # GET /auth/me
-   │     │  ├─ change-password.api.ts  # POST /auth/change-password
-   │     │  ├─ update-profile.api.ts   # PATCH /auth/me/profile
-   │     │  ├─ refresh-token.api.ts  # POST /auth/refresh-token
-   │     │  └─ signup.api.ts     # POST /auth/signup
-   │     ├─ lib/                 # 비즈니스 로직 헬퍼
-   │     │  ├─ auth-storage.ts   # localStorage 토큰/사용자 정보 관리
-   │     │  ├─ permission.ts     # 권한 체크 + 메뉴 필터링 + pathNameMap 빌드
-   │     │  └─ setup-auth-interceptor.ts  # Axios 인터셉터에 auth 의존성 주입
-   │     ├─ model/               # 상태 관리, 서비스, 커스텀 훅
-   │     │  ├─ auth.store.ts     # Zustand 인증 상태 스토어 (accessToken + me)
-   │     │  ├─ auth.service.ts   # 로그인 성공 처리, 사용자 정보 관리
-   │     │  ├─ login.schema.ts   # Zod 로그인 폼 유효성 스키마
-   │     │  ├─ signup.schema.ts  # Zod 회원가입 폼 유효성 스키마 (refine 비밀번호 확인)
-   │     │  ├─ change-password.schema.ts  # Zod 비밀번호 변경 스키마 (비밀번호 규칙 + refine)
-   │     │  ├─ update-profile.schema.ts   # Zod 프로필 수정 스키마 (이메일/길이 검증)
-   │     │  ├─ use-login.ts      # useLogin() React Query 뮤테이션 훅
-   │     │  ├─ use-signup.ts     # useSignup() React Query 뮤테이션 훅
-   │     │  ├─ use-logout.ts     # useLogout() 로그아웃 훅 (API + 로컬 상태 정리)
-   │     │  ├─ use-logout-all.ts  # useLogoutAll() 전체 기기 로그아웃 훅
-   │     │  ├─ use-me.ts         # useMe() 사용자/메뉴/권한 훅 (Zustand 구독)
-   │     │  ├─ use-change-password.ts  # useChangePassword() 비밀번호 변경 훅
-   │     │  ├─ use-update-profile.ts   # useUpdateProfile() 프로필 수정 훅 (로컬 상태 병합)
-   │     │  └─ use-refresh-token.ts  # useRefreshToken() 뮤테이션 훅
-   │     ├─ types/               # 도메인 타입 정의
-   │     │  └─ auth.type.ts      # LoginRequest/Response, SignupRequest/Response, MeResponse, MenuTree, 권한 타입, ChangePasswordRequest, UpdateProfileRequest/Response 등
-   │     └─ ui/                  # 도메인 UI 컴포넌트 (컴포넌트별 폴더 분리)
-   │        ├─ login-form/
-   │        │  ├─ login-form.tsx    # 로그인 폼 (React Hook Form + Zod + Ant Design)
-   │        │  └─ login-form.module.css  # 로그인 폼 스타일
-   │        ├─ signup-form/
-   │        │  ├─ signup-form.tsx   # 회원가입 폼 (6필드, passwordConfirm 제거 후 전송)
-   │        │  └─ signup-form.module.css  # 회원가입 폼 스타일
-   │        ├─ change-password-form/
-   │        │  ├─ change-password-form.tsx    # 비밀번호 변경 모달 폼 (3필드)
-   │        │  └─ change-password-form.module.css
-   │        └─ profile-edit-form/
-   │           ├─ profile-edit-form.tsx       # 프로필 수정 모달 폼 (5필드)
-   │           └─ profile-edit-form.module.css
+   │  ├─ auth/                   # 인증/권한 도메인
+   │  │  ├─ index.ts             # Public API (외부 노출 인터페이스)
+   │  │  ├─ api/                 # API 호출 함수
+   │  │  │  ├─ endpoints.ts      # API 엔드포인트 상수 정의
+   │  │  │  ├─ login.api.ts      # POST /auth/login
+   │  │  │  ├─ logout.api.ts     # POST /auth/logout
+   │  │  │  ├─ logout-all.api.ts # POST /auth/logout-all
+   │  │  │  ├─ me.api.ts         # GET /auth/me
+   │  │  │  ├─ change-password.api.ts  # POST /auth/change-password
+   │  │  │  ├─ update-profile.api.ts   # PATCH /auth/me/profile
+   │  │  │  ├─ refresh-token.api.ts  # POST /auth/refresh-token
+   │  │  │  └─ signup.api.ts     # POST /auth/signup
+   │  │  ├─ lib/                 # 비즈니스 로직 헬퍼
+   │  │  │  ├─ auth-storage.ts   # localStorage 토큰/사용자 정보 관리
+   │  │  │  ├─ permission.ts     # 권한 체크 + 메뉴 필터링 + pathNameMap 빌드
+   │  │  │  └─ setup-auth-interceptor.ts  # Axios 인터셉터에 auth 의존성 주입
+   │  │  ├─ model/               # 상태 관리, 서비스, 커스텀 훅
+   │  │  │  ├─ auth.store.ts     # Zustand 인증 상태 스토어 (accessToken + me)
+   │  │  │  ├─ auth.service.ts   # 로그인 성공 처리, 사용자 정보 관리
+   │  │  │  ├─ login.schema.ts   # Zod 로그인 폼 유효성 스키마
+   │  │  │  ├─ signup.schema.ts  # Zod 회원가입 폼 유효성 스키마 (refine 비밀번호 확인)
+   │  │  │  ├─ change-password.schema.ts  # Zod 비밀번호 변경 스키마 (비밀번호 규칙 + refine)
+   │  │  │  ├─ update-profile.schema.ts   # Zod 프로필 수정 스키마 (이메일/길이 검증)
+   │  │  │  ├─ use-login.ts      # useLogin() React Query 뮤테이션 훅
+   │  │  │  ├─ use-signup.ts     # useSignup() React Query 뮤테이션 훅
+   │  │  │  ├─ use-logout.ts     # useLogout() 로그아웃 훅 (API + 로컬 상태 정리)
+   │  │  │  ├─ use-logout-all.ts  # useLogoutAll() 전체 기기 로그아웃 훅
+   │  │  │  ├─ use-me.ts         # useMe() 사용자/메뉴/권한 훅 (Zustand 구독)
+   │  │  │  ├─ use-change-password.ts  # useChangePassword() 비밀번호 변경 훅
+   │  │  │  ├─ use-update-profile.ts   # useUpdateProfile() 프로필 수정 훅 (로컬 상태 병합)
+   │  │  │  └─ use-refresh-token.ts  # useRefreshToken() 뮤테이션 훅
+   │  │  ├─ types/               # 도메인 타입 정의
+   │  │  │  └─ auth.type.ts      # LoginRequest/Response, MeResponse, MenuTree, 권한 타입 등
+   │  │  └─ ui/                  # 도메인 UI 컴포넌트 (컴포넌트별 폴더 분리)
+   │  │     ├─ login-form/
+   │  │     │  ├─ login-form.tsx    # 로그인 폼 (React Hook Form + Zod + Ant Design)
+   │  │     │  └─ login-form.module.css
+   │  │     ├─ signup-form/
+   │  │     │  ├─ signup-form.tsx   # 회원가입 폼 (6필드, passwordConfirm 제거 후 전송)
+   │  │     │  └─ signup-form.module.css
+   │  │     ├─ change-password-form/
+   │  │     │  ├─ change-password-form.tsx    # 비밀번호 변경 모달 폼 (3필드)
+   │  │     │  └─ change-password-form.module.css
+   │  │     └─ profile-edit-form/
+   │  │        ├─ profile-edit-form.tsx       # 프로필 수정 모달 폼 (5필드)
+   │  │        └─ profile-edit-form.module.css
+   │  │
+   │  ├─ user/                   # 사용자 관리 도메인
+   │  │  ├─ index.ts             # Public API (UI 컴포넌트, 훅, 스키마, 타입 노출)
+   │  │  ├─ api/                 # API 호출 함수
+   │  │  │  ├─ user.endpoint.ts  # API 엔드포인트 상수 (USER_ENDPOINTS)
+   │  │  │  ├─ get-users.api.ts  # GET /users (목록 조회)
+   │  │  │  ├─ get-user.api.ts   # GET /users/{id} (상세 조회)
+   │  │  │  ├─ create-user.api.ts  # POST /users (생성)
+   │  │  │  ├─ update-user.api.ts  # PATCH /users/{id} (수정)
+   │  │  │  ├─ update-user-status.api.ts  # PATCH /users/{id}/status (상태 변경)
+   │  │  │  ├─ reset-user-password.api.ts  # PATCH /users/{id}/password (비밀번호 초기화)
+   │  │  │  ├─ invalidate-user-tokens.api.ts  # POST /users/{id}/invalidate-tokens (강제 로그아웃)
+   │  │  │  └─ update-user-roles.api.ts  # PATCH /users/{id}/roles (역할 변경)
+   │  │  ├─ model/               # 커스텀 훅, Zod 스키마
+   │  │  │  ├─ use-users.ts      # useUsers() 사용자 목록 조회 훅 (useQuery)
+   │  │  │  ├─ use-user.ts       # useUser() 사용자 상세 조회 훅 (useQuery)
+   │  │  │  ├─ use-create-user.ts  # useCreateUser() 뮤테이션 훅
+   │  │  │  ├─ use-update-user.ts  # useUpdateUser() 뮤테이션 훅
+   │  │  │  ├─ use-update-user-status.ts  # useUpdateUserStatus() 뮤테이션 훅
+   │  │  │  ├─ use-reset-user-password.ts  # useResetUserPassword() 뮤테이션 훅
+   │  │  │  ├─ use-invalidate-user-tokens.ts  # useInvalidateUserTokens() 뮤테이션 훅
+   │  │  │  ├─ use-update-user-roles.ts  # useUpdateUserRoles() 뮤테이션 훅
+   │  │  │  ├─ create-user.schema.ts  # Zod 사용자 생성 스키마
+   │  │  │  ├─ update-user.schema.ts  # Zod 사용자 수정 스키마
+   │  │  │  └─ reset-user-password.schema.ts  # Zod 비밀번호 초기화 스키마
+   │  │  ├─ types/
+   │  │  │  └─ user.type.ts      # User, GetUsersRequest/Response, CreateUserRequest 등 타입
+   │  │  └─ ui/                  # 도메인 UI 컴포넌트
+   │  │     ├─ user-table/
+   │  │     │  ├─ user-table.tsx  # 사용자 목록 테이블 (정렬, 페이지네이션, Dropdown 액션 메뉴)
+   │  │     │  └─ user-table.module.css
+   │  │     ├─ user-create-form/
+   │  │     │  ├─ user-create-form.tsx  # 사용자 생성 폼
+   │  │     │  └─ user-create-form.module.css
+   │  │     ├─ user-edit-form/
+   │  │     │  ├─ user-edit-form.tsx  # 사용자 수정 폼 (기본정보/연락처/역할 섹션 분리)
+   │  │     │  └─ user-edit-form.module.css
+   │  │     └─ user-password-form/
+   │  │        ├─ user-password-form.tsx  # 비밀번호 초기화 폼
+   │  │        └─ user-password-form.module.css
+   │  │
+   │  └─ role/                   # 역할 관리 도메인
+   │     ├─ index.ts             # Public API (useRoles, getRolesApi, 타입 노출)
+   │     ├─ api/
+   │     │  ├─ role.endpoint.ts  # API 엔드포인트 상수 (ROLE_ENDPOINTS)
+   │     │  └─ get-roles.api.ts  # GET /roles (역할 목록 조회)
+   │     ├─ model/
+   │     │  └─ use-roles.ts      # useRoles() 역할 목록 조회 훅 (useQuery)
+   │     └─ types/
+   │        └─ role.type.ts      # Role, GetRolesRequest/Response 타입
    │
    └─ pages/                     # 라우트 단위 페이지 컴포넌트
       ├─ login/
       │  ├─ login-page.tsx       # 로그인 페이지 (이미 로그인 시 대시보드 리다이렉트)
-      │  └─ login-page.module.css  # 로그인 페이지 스타일
+      │  └─ login-page.module.css
       ├─ signup/
       │  ├─ signup-page.tsx      # 회원가입 페이지 (이미 로그인 시 대시보드 리다이렉트)
-      │  └─ signup-page.module.css  # 회원가입 페이지 스타일
+      │  └─ signup-page.module.css
       ├─ mypage/
       │  ├─ mypage-page.tsx      # 마이페이지 (프로필, 역할, 권한, 보안 설정)
-      │  └─ mypage-page.module.css  # 마이페이지 스타일 (2열 반응형 레이아웃)
+      │  └─ mypage-page.module.css
+      ├─ user/
+      │  ├─ user-page.tsx        # 사용자 관리 페이지 (검색/필터 + 테이블 + CRUD 모달)
+      │  └─ user-page.module.css
       └─ dashboard/
          └─ dashboard-page.tsx   # 대시보드 페이지 (보호된 라우트)
 ```
@@ -311,6 +364,7 @@ features/{도메인명}/
 | `/signup` | SignupPage | — | 불필요 | 회원가입 페이지 (로그인 상태 시 `/dashboard`로 리다이렉트) |
 | `/dashboard` | DashboardPage | MainLayout | **필요** | 대시보드 (ProtectedRoute + MainLayout으로 보호) |
 | `/mypage` | MypagePage | MainLayout | **필요** | 마이페이지 (프로필 정보, 역할/권한, 보안 설정) |
+| `/users` | UserPage | MainLayout | **필요** | 사용자 관리 (CRUD, 상태 변경, 비밀번호 초기화, 역할 설정) |
 
 ## 구현 현황
 
@@ -332,6 +386,8 @@ features/{도메인명}/
 | 비밀번호 변경 | ✅ 완료 | 모달 폼 (현재 비밀번호 + 새 비밀번호 + 확인), Zod 검증 (8자+, 영문/숫자/특수문자) |
 | 프로필 수정 | ✅ 완료 | 모달 폼 (회사명, 이름, 이메일, 전화번호, 휴대폰), Zustand + localStorage 즉시 동기화 |
 | 전체 기기 로그아웃 | ✅ 완료 | POST /auth/logout-all API 연동 + 로컬 상태 정리 |
+| 사용자 관리 | ✅ 완료 | 사용자 CRUD, 검색/필터, 상태 변경, 비밀번호 초기화, 강제 로그아웃, 역할 배정 |
+| 역할 관리 (기본) | ✅ 완료 | 역할 목록 조회, 사용자 수정 시 역할 다중 선택 (features/role 슬라이스 분리) |
 | CSS 토큰 체계 | ✅ 완료 | CSS Custom Properties 29개 (:root), focus-visible 접근성 |
 | 에러 처리 | ✅ 완료 | AxiosError 타입 래핑 + 에러 코드 매핑 + 한국어 메시지 |
 | 반응형 디자인 | ✅ 완료 | 모바일 대응 (768px 브레이크포인트) |

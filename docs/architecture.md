@@ -43,6 +43,9 @@
 - [8. 배포](#8-배포)
 - [9. 파일 네이밍 규칙](#9-파일-네이밍-규칙)
 - [10. 새 기능 추가 가이드](#10-새-기능-추가-가이드)
+- [11. 구현된 Feature Slice 상세](#11-구현된-feature-slice-상세)
+  - [11.1 사용자 관리 Feature](#111-사용자-관리-feature-featuresuser)
+  - [11.2 역할 관리 Feature](#112-역할-관리-feature-featuresrole)
 
 ---
 
@@ -148,6 +151,7 @@ const queryClient = new QueryClient({
   <Route element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
     <Route path="/dashboard" element={<DashboardPage />} />
     <Route path="/mypage" element={<MypagePage />} />
+    <Route path="/users" element={<UserPage />} />
   </Route>
 
   <Route path="/" element={<Navigate to="/login" />} />
@@ -167,6 +171,7 @@ const queryClient = new QueryClient({
 | `/signup` | `SignupPage` | — | 공개 | 이미 로그인 시 `/dashboard`로 리다이렉트 |
 | `/dashboard` | `DashboardPage` | `MainLayout` | `ProtectedRoute` | 토큰 없으면 `/login`으로 리다이렉트 |
 | `/mypage` | `MypagePage` | `MainLayout` | `ProtectedRoute` | 프로필 정보, 역할/권한, 보안 설정 |
+| `/users` | `UserPage` | `MainLayout` | `ProtectedRoute` | 사용자 관리 (CRUD, 상태 변경, 역할 설정) |
 
 ### 2.4 메인 레이아웃 구조
 
@@ -740,6 +745,9 @@ const { control, handleSubmit, reset, setFocus, formState: { errors } } = useFor
 | `signupSchema` | `signup.schema.ts` | 6 | 이메일 형식, 비밀번호 강도, refine 비밀번호 확인 |
 | `changePasswordSchema` | `change-password.schema.ts` | 3 | 8자+ 영문/숫자/특수문자, refine 비밀번호 확인 + 현재와 상이 |
 | `updateProfileSchema` | `update-profile.schema.ts` | 5 | 이메일 형식, 최대 길이, optional 필드 (`userTel`, `userHp`) |
+| `createUserSchema` | `create-user.schema.ts` | 7 | 사용자 ID/비밀번호 필수, 이메일 형식, 회사명 필수 |
+| `updateUserSchema` | `update-user.schema.ts` | 5 | 이름/회사명 필수, 이메일/전화번호 optional |
+| `resetUserPasswordSchema` | `reset-user-password.schema.ts` | 1 | 새 비밀번호 8자 이상 |
 
 ---
 
@@ -888,6 +896,23 @@ export const AUTH_ENDPOINTS = {
   REFRESH_TOKEN: '/auth/refresh-token',
   SIGNUP: '/auth/signup',
 } as const;
+
+// src/features/user/api/user.endpoint.ts
+export const USER_ENDPOINTS = {
+  LIST: '/users',
+  CREATE: '/users',
+  DETAIL: (id: number) => `/users/${id}`,
+  UPDATE: (id: number) => `/users/${id}`,
+  STATUS: (id: number) => `/users/${id}/status`,
+  PASSWORD: (id: number) => `/users/${id}/password`,
+  INVALIDATE_TOKENS: (id: number) => `/users/${id}/invalidate-tokens`,
+  ROLES: (id: number) => `/users/${id}/roles`,
+} as const;
+
+// src/features/role/api/role.endpoint.ts
+export const ROLE_ENDPOINTS = {
+  LIST: '/roles',
+} as const;
 ```
 
 - 상수 파일을 분리하여 API 경로 변경 시 한 곳만 수정
@@ -905,6 +930,15 @@ export const AUTH_ENDPOINTS = {
 | PATCH | `/auth/me/profile` | 프로필 수정 | `UpdateProfileRequest` | `UpdateProfileResponse` |
 | POST | `/auth/refresh-token` | 토큰 갱신 | `RefreshTokenRequest` | `RefreshTokenResponse` |
 | POST | `/auth/signup` | 회원가입 (Tenant + 관리자 생성) | `SignupRequest` | `SignupResponse` |
+| GET | `/users` | 사용자 목록 조회 | `GetUsersRequest` (query) | `GetUsersResponse` |
+| GET | `/users/{id}` | 사용자 상세 조회 | — | `GetUserResponse` |
+| POST | `/users` | 사용자 생성 | `CreateUserRequest` | `CreateUserResponse` |
+| PATCH | `/users/{id}` | 사용자 수정 | `UpdateUserRequest` | `UpdateUserResponse` |
+| PATCH | `/users/{id}/status` | 사용자 상태 변경 (활성/정지) | `UpdateUserStatusRequest` | `UpdateUserStatusResponse` |
+| PATCH | `/users/{id}/password` | 비밀번호 초기화 | `ResetUserPasswordRequest` | `void` (204) |
+| POST | `/users/{id}/invalidate-tokens` | 강제 로그아웃 (토큰 무효화) | — | `void` (204) |
+| PATCH | `/users/{id}/roles` | 사용자 역할 변경 | `UpdateUserRolesRequest` | `UpdateUserRolesResponse` |
+| GET | `/roles` | 역할 목록 조회 | `GetRolesRequest` (query) | `GetRolesResponse` |
 
 ---
 
@@ -1140,39 +1174,52 @@ export default defineConfig({
 src/features/user/
 ├─ index.ts              # Public API
 ├─ api/
-│  ├─ endpoints.ts       # API 엔드포인트 경로 상수
-│  └─ user.api.ts        # API 호출 함수
+│  ├─ user.endpoint.ts   # API 엔드포인트 경로 상수
+│  ├─ get-users.api.ts   # GET /users
+│  ├─ get-user.api.ts    # GET /users/{id}
+│  ├─ create-user.api.ts # POST /users
+│  └─ ...                # 기능별 api 파일
 ├─ model/
-│  ├─ user.store.ts      # (필요 시) Zustand 스토어
-│  ├─ use-users.ts       # React Query 훅
-│  └─ user.schema.ts     # (필요 시) Zod 스키마
+│  ├─ use-users.ts       # React Query useQuery 훅 (목록 조회)
+│  ├─ use-user.ts        # React Query useQuery 훅 (상세 조회)
+│  ├─ use-create-user.ts # React Query useMutation 훅
+│  ├─ create-user.schema.ts  # Zod 유효성 스키마
+│  └─ ...                # 기능별 훅/스키마 파일
 ├─ types/
 │  └─ user.type.ts       # 타입 정의
-├─ lib/
-│  └─ user-utils.ts      # (필요 시) 유틸 함수
-└─ ui/
-   ├─ user-list.tsx      # UI 컴포넌트
-   └─ user-list.module.css
+└─ ui/                   # 컴포넌트별 폴더 분리
+   ├─ user-table/
+   │  ├─ user-table.tsx
+   │  └─ user-table.module.css
+   └─ user-edit-form/
+      ├─ user-edit-form.tsx
+      └─ user-edit-form.module.css
 ```
 
 ### Step 2: API 함수 작성
 
 ```typescript
-// src/features/user/api/endpoints.ts
+// src/features/user/api/user.endpoint.ts
 export const USER_ENDPOINTS = {
-  USERS: '/users',
-  USER_DETAIL: (id: number) => `/users/${id}`,
+  LIST: '/users',
+  CREATE: '/users',
+  DETAIL: (id: number) => `/users/${id}`,
+  UPDATE: (id: number) => `/users/${id}`,
+  STATUS: (id: number) => `/users/${id}/status`,
+  PASSWORD: (id: number) => `/users/${id}/password`,
+  INVALIDATE_TOKENS: (id: number) => `/users/${id}/invalidate-tokens`,
+  ROLES: (id: number) => `/users/${id}/roles`,
 } as const;
 ```
 
 ```typescript
-// src/features/user/api/user.api.ts
+// src/features/user/api/get-users.api.ts
 import { axiosInstance } from '@shared/api/axios';
-import { USER_ENDPOINTS } from './endpoints';
-import type { User } from '../types/user.type';
+import { USER_ENDPOINTS } from './user.endpoint';
+import type { GetUsersRequest, GetUsersResponse } from '../types/user.type';
 
-export async function getUsersApi(): Promise<User[]> {
-  const response = await axiosInstance.get<User[]>(USER_ENDPOINTS.USERS);
+export async function getUsersApi(params?: GetUsersRequest): Promise<GetUsersResponse> {
+  const response = await axiosInstance.get<GetUsersResponse>(USER_ENDPOINTS.LIST, { params });
   return response.data;
 }
 ```
@@ -1180,14 +1227,29 @@ export async function getUsersApi(): Promise<User[]> {
 ### Step 3: React Query 훅 작성
 
 ```typescript
-// src/features/user/model/use-users.ts
+// src/features/user/model/use-users.ts — useQuery 패턴 (조회)
 import { useQuery } from '@tanstack/react-query';
-import { getUsersApi } from '../api/user.api';
+import { getUsersApi } from '../api/get-users.api';
+import type { GetUsersRequest, GetUsersResponse } from '../types/user.type';
 
-export function useUsers() {
-  return useQuery({
-    queryKey: ['users'],
-    queryFn: getUsersApi,
+export function useUsers(params?: GetUsersRequest) {
+  return useQuery<GetUsersResponse>({
+    queryKey: ['users', params],
+    queryFn: () => getUsersApi(params),
+  });
+}
+
+// src/features/user/model/use-create-user.ts — useMutation 패턴 (변경)
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { createUserApi } from '../api/create-user.api';
+
+export function useCreateUser() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: createUserApi,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+    },
   });
 }
 ```
@@ -1196,20 +1258,30 @@ export function useUsers() {
 
 ```typescript
 // src/features/user/index.ts
+export { default as UserTable } from './ui/user-table/user-table.tsx';
+export { default as UserCreateForm } from './ui/user-create-form/user-create-form.tsx';
+export { default as UserEditForm } from './ui/user-edit-form/user-edit-form.tsx';
+export { default as UserPasswordForm } from './ui/user-password-form/user-password-form.tsx';
+
 export { useUsers } from './model/use-users';
-export * from './api/user.api';
+export { useUser } from './model/use-user';
+export { useCreateUser } from './model/use-create-user';
+// ... 기타 훅, 스키마
+
 export * from './types/user.type';
-export { default as UserList } from './ui/user-list';
 ```
 
 ### Step 5: 페이지에서 사용
 
 ```typescript
 // src/pages/user/user-page.tsx
-import { UserList } from '@features/user';
+import { UserTable, UserCreateForm, UserEditForm, useUsers } from '@features/user';
+import { useRoles } from '@features/role';  // 크로스 feature 참조는 pages 레이어에서만
 
 export default function UserPage() {
-  return <UserList />;
+  const { data } = useUsers(params);
+  const { data: rolesData } = useRoles();
+  // ...
 }
 ```
 
@@ -1221,8 +1293,137 @@ import UserPage from '@pages/user/user-page';
 
 <Route element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
   <Route path="/dashboard" element={<DashboardPage />} />
+  <Route path="/mypage" element={<MypagePage />} />
   <Route path="/users" element={<UserPage />} />
 </Route>
 ```
 
 > Layout Route 패턴을 사용하므로 `ProtectedRoute`와 `MainLayout`으로 감싸진 부모 Route 안에 자식 Route를 추가합니다.
+
+---
+
+## 11. 구현된 Feature Slice 상세
+
+### 11.1 사용자 관리 Feature (`features/user/`)
+
+사용자 CRUD, 상태 변경, 비밀번호 초기화, 강제 로그아웃, 역할 배정 기능을 담당합니다.
+
+**Feature Slice 구조:**
+
+```
+features/user/
+├─ index.ts                          # Public API
+├─ api/
+│  ├─ user.endpoint.ts               # USER_ENDPOINTS 상수
+│  ├─ get-users.api.ts               # GET /users (페이지네이션, 검색, 필터, 정렬)
+│  ├─ get-user.api.ts                # GET /users/{id} (상세 조회 + 역할 정보)
+│  ├─ create-user.api.ts             # POST /users
+│  ├─ update-user.api.ts             # PATCH /users/{id}
+│  ├─ update-user-status.api.ts      # PATCH /users/{id}/status
+│  ├─ reset-user-password.api.ts     # PATCH /users/{id}/password
+│  ├─ invalidate-user-tokens.api.ts  # POST /users/{id}/invalidate-tokens
+│  └─ update-user-roles.api.ts       # PATCH /users/{id}/roles
+├─ model/
+│  ├─ use-users.ts                   # useQuery — 목록 조회 (queryKey: ['users', params])
+│  ├─ use-user.ts                    # useQuery — 상세 조회 (queryKey: ['users', id])
+│  ├─ use-create-user.ts             # useMutation + invalidateQueries(['users'])
+│  ├─ use-update-user.ts             # useMutation + invalidateQueries(['users'])
+│  ├─ use-update-user-status.ts      # useMutation + invalidateQueries(['users'])
+│  ├─ use-reset-user-password.ts     # useMutation
+│  ├─ use-invalidate-user-tokens.ts  # useMutation
+│  ├─ use-update-user-roles.ts       # useMutation + invalidateQueries(['users'])
+│  ├─ create-user.schema.ts          # Zod 스키마 (userId, password, userName, corpName 등)
+│  ├─ update-user.schema.ts          # Zod 스키마 (userName, corpName 등 optional)
+│  └─ reset-user-password.schema.ts  # Zod 스키마 (newPassword 8자+)
+├─ types/
+│  └─ user.type.ts                   # User, GetUsersRequest/Response, CreateUserRequest 등
+└─ ui/
+   ├─ user-table/                    # 사용자 목록 테이블
+   │  ├─ user-table.tsx              # AntD Table + 정렬 + 페이지네이션 + Dropdown 액션 메뉴
+   │  └─ user-table.module.css       #   ├─ 액션: 정보 수정, 상태 변경, 비밀번호 초기화, 강제 로그아웃
+   ├─ user-create-form/              # 사용자 생성 폼
+   │  ├─ user-create-form.tsx        # RHF + Zod + Controller 패턴 (7필드)
+   │  └─ user-create-form.module.css
+   ├─ user-edit-form/                # 사용자 수정 폼
+   │  ├─ user-edit-form.tsx          # 3섹션 구조 (기본정보 / 연락처 / 역할 설정)
+   │  └─ user-edit-form.module.css   #   역할: Select mode="multiple" + role 데이터 연동
+   └─ user-password-form/            # 비밀번호 초기화 폼
+      ├─ user-password-form.tsx
+      └─ user-password-form.module.css
+```
+
+**사용자 관리 페이지 (`pages/user/user-page.tsx`):**
+- 페이지 헤더: 제목 + 총 사용자 수 Badge + 검색/필터 툴바 + 생성 버튼
+- 테이블: 아이디, 이름, 회사명, 이메일, 상태(Tooltip으로 정지일 표시), 등록일, Dropdown 액션 메뉴
+- 모달: 사용자 생성, 사용자 수정(역할 포함), 비밀번호 초기화
+- 확인 다이얼로그: 상태 변경(활성↔정지), 강제 로그아웃
+
+**주요 타입:**
+
+```typescript
+interface User {
+  userSeq: number;
+  tenantId: number;
+  userId: string;
+  userName: string;
+  userEmail: string;
+  userTel: string | null;
+  userHp: string | null;
+  corpName: string;
+  isActive: number;
+  regDtm: string;
+  stopDtm: string | null;
+}
+
+interface GetUsersResponse {
+  items: User[];
+  pageInfo: { currentPage: number; pageSize: number; totalItems: number; totalPages: number };
+}
+
+interface GetUserResponse extends User {
+  assignedRoleIds: number[];
+  availableRoles: Role[];  // from @features/role
+}
+```
+
+### 11.2 역할 관리 Feature (`features/role/`)
+
+역할(Role) 도메인을 독립 슬라이스로 분리하여, 사용자 관리와 향후 권한 관리에서 공통 사용합니다.
+
+**Feature Slice 구조:**
+
+```
+features/role/
+├─ index.ts                  # Public API (useRoles, getRolesApi, 타입)
+├─ api/
+│  ├─ role.endpoint.ts       # ROLE_ENDPOINTS = { LIST: '/roles' }
+│  └─ get-roles.api.ts       # GET /roles (페이지네이션, 검색, 필터)
+├─ model/
+│  └─ use-roles.ts           # useQuery — 역할 목록 조회 (queryKey: ['roles', params])
+└─ types/
+   └─ role.type.ts           # Role, GetRolesRequest, GetRolesResponse
+```
+
+**주요 타입:**
+
+```typescript
+interface Role {
+  roleId: number;
+  roleName: string;
+  displayName: string;
+  description: string | null;
+  isActive: number;
+  createdAt: string;
+  updatedAt: string;
+  tenantId: number;
+  userCount: number;
+  permissionCount: number;
+}
+
+interface GetRolesResponse {
+  items: Role[];
+  pageInfo: { currentPage: number; pageSize: number; totalItems: number; totalPages: number };
+}
+```
+
+> **설계 의도**: Role은 사용자 수정 시 역할 배정에 사용되며, 향후 역할 CRUD/권한 관리 페이지 확장 시 이 슬라이스에 기능을 추가합니다. FSD 원칙에 따라 `features/user/`와 `features/role/`은 서로 직접 참조하지 않으며, `pages/` 레이어에서 조합합니다.

@@ -4,6 +4,7 @@ import LoginPage from '@pages/login/login-page';
 import SignupPage from '@pages/signup/signup-page';
 import DashboardPage from '@pages/dashboard/dashboard-page';
 import MypagePage from '@pages/mypage/mypage-page';
+import UserPage from '@pages/user/user-page';
 import { ProtectedRoute } from './ProtectedRoute';
 import MainLayout from './layouts/main-layout';
 
@@ -30,6 +31,7 @@ export default function App() {
           <Route element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/mypage" element={<MypagePage />} />
+            <Route path="/users" element={<UserPage />} />
           </Route>
 
           <Route path="/" element={<Navigate to="/login" />} />

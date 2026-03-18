@@ -11,6 +11,8 @@ const ERROR_MESSAGE_MAP: Record<string, string> = {
   VAL001_400: '입력값이 올바르지 않습니다.',
   BIZ001_409: '비즈니스 충돌 오류가 발생했습니다.',
   RES001_404: '요청한 리소스를 찾을 수 없습니다.',
+  USER001_409: '이미 존재하는 사용자입니다.',
+  USER001_404: '사용자를 찾을 수 없습니다.',
 };
 
 // axios 공식 isAxiosError 사용
