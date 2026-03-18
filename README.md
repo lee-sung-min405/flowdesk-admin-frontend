@@ -2,22 +2,25 @@
 
 ## 목차
 
-- [프로젝트 소개](#프로젝트-소개)
-- [주요 기술 스택](#주요-기술-스택)
-- [시작하기](#시작하기)
-  - [사전 요구사항](#사전-요구사항)
-  - [설치 및 실행](#설치-및-실행)
-  - [환경 변수](#환경-변수)
-  - [사용 가능한 스크립트](#사용-가능한-스크립트)
-- [폴더 구조](#폴더-구조)
-- [폴더/파일 구조 규칙 및 사용 가이드](#폴더파일-구조-규칙-및-사용-가이드)
-  - [레이어별 역할 요약](#레이어별-역할-요약)
-  - [폴더별 생성/사용 예시](#폴더별-생성사용-예시)
-  - [Feature Slice 내부 구조 가이드](#feature-slice-내부-구조-가이드)
-- [라우팅 구조](#라우팅-구조)
-- [구현 현황](#구현-현황)
-- [배포](#배포)
-- [문서](#문서)
+- [Flowdesk Admin Frontend](#flowdesk-admin-frontend)
+  - [목차](#목차)
+  - [프로젝트 소개](#프로젝트-소개)
+  - [주요 기술 스택](#주요-기술-스택)
+  - [시작하기](#시작하기)
+    - [사전 요구사항](#사전-요구사항)
+    - [설치 및 실행](#설치-및-실행)
+    - [환경 변수](#환경-변수)
+    - [사용 가능한 스크립트](#사용-가능한-스크립트)
+  - [폴더 구조](#폴더-구조)
+  - [폴더/파일 구조 규칙 및 사용 가이드](#폴더파일-구조-규칙-및-사용-가이드)
+    - [레이어별 역할 요약](#레이어별-역할-요약)
+    - [폴더별 생성/사용 예시](#폴더별-생성사용-예시)
+    - [Feature Slice 내부 구조 가이드](#feature-slice-내부-구조-가이드)
+    - [Path Alias](#path-alias)
+  - [라우팅 구조](#라우팅-구조)
+  - [구현 현황](#구현-현황)
+  - [배포](#배포)
+  - [문서](#문서)
 
 ---
 
@@ -128,14 +131,14 @@ flowdesk-admin-frontend/
    │
    ├─ widgets/                   # 레이아웃 공통 UI 블록
    │  ├─ sidebar/
-   │  │  ├─ sidebar.tsx          # 사이드바 컴포넌트 (동적 메뉴, 접기/펼치기, 모바일 오버레이)
-   │  │  ├─ sidebar.module.css   # 사이드바 스타일
+   │  │  ├─ sidebar.tsx          # 사이드바 컴포넌트 (동적 메뉴, 접기/펼치기, 모바일 오버레이, 유저 클릭→마이페이지)
+   │  │  ├─ sidebar.module.css   # 사이드바 스타일 (호버 효과 포함)
    │  │  ├─ sidebar.type.ts      # SidebarProps 타입
    │  │  └─ lib/
    │  │     ├─ build-menu-items.ts  # MenuTree[] → AntD MenuItem[] 재귀 변환
    │  │     └─ menu-icon-map.tsx    # pageName → 아이콘 매핑 테이블
    │  ├─ header/
-   │  │  ├─ header.tsx           # 헤더 컴포넌트 (토글, 브레드크럼, 알림, 프로필)
+   │  │  ├─ header.tsx           # 헤더 컴포넌트 (토글, 브레드크럼, 알림, 프로필, 비밀번호 변경 모달)
    │  │  ├─ header.module.css    # 헤더 스타일
    │  │  └─ header.type.ts       # HeaderProps 타입
    │  └─ breadcrumb/
@@ -149,7 +152,10 @@ flowdesk-admin-frontend/
    │     │  ├─ endpoints.ts      # API 엔드포인트 상수 정의
    │     │  ├─ login.api.ts      # POST /auth/login
    │     │  ├─ logout.api.ts     # POST /auth/logout
+   │     │  ├─ logout-all.api.ts # POST /auth/logout-all
    │     │  ├─ me.api.ts         # GET /auth/me
+   │     │  ├─ change-password.api.ts  # POST /auth/change-password
+   │     │  ├─ update-profile.api.ts   # PATCH /auth/me/profile
    │     │  ├─ refresh-token.api.ts  # POST /auth/refresh-token
    │     │  └─ signup.api.ts     # POST /auth/signup
    │     ├─ lib/                 # 비즈니스 로직 헬퍼
@@ -161,20 +167,31 @@ flowdesk-admin-frontend/
    │     │  ├─ auth.service.ts   # 로그인 성공 처리, 사용자 정보 관리
    │     │  ├─ login.schema.ts   # Zod 로그인 폼 유효성 스키마
    │     │  ├─ signup.schema.ts  # Zod 회원가입 폼 유효성 스키마 (refine 비밀번호 확인)
+   │     │  ├─ change-password.schema.ts  # Zod 비밀번호 변경 스키마 (비밀번호 규칙 + refine)
+   │     │  ├─ update-profile.schema.ts   # Zod 프로필 수정 스키마 (이메일/길이 검증)
    │     │  ├─ use-login.ts      # useLogin() React Query 뮤테이션 훅
    │     │  ├─ use-signup.ts     # useSignup() React Query 뮤테이션 훅
    │     │  ├─ use-logout.ts     # useLogout() 로그아웃 훅 (API + 로컬 상태 정리)
+   │     │  ├─ use-logout-all.ts  # useLogoutAll() 전체 기기 로그아웃 훅
    │     │  ├─ use-me.ts         # useMe() 사용자/메뉴/권한 훅 (Zustand 구독)
+   │     │  ├─ use-change-password.ts  # useChangePassword() 비밀번호 변경 훅
+   │     │  ├─ use-update-profile.ts   # useUpdateProfile() 프로필 수정 훅 (로컬 상태 병합)
    │     │  └─ use-refresh-token.ts  # useRefreshToken() 뮤테이션 훅
    │     ├─ types/               # 도메인 타입 정의
-   │     │  └─ auth.type.ts      # LoginRequest/Response, SignupRequest/Response, MeResponse, MenuTree, 권한 타입 등
+   │     │  └─ auth.type.ts      # LoginRequest/Response, SignupRequest/Response, MeResponse, MenuTree, 권한 타입, ChangePasswordRequest, UpdateProfileRequest/Response 등
    │     └─ ui/                  # 도메인 UI 컴포넌트 (컴포넌트별 폴더 분리)
    │        ├─ login-form/
    │        │  ├─ login-form.tsx    # 로그인 폼 (React Hook Form + Zod + Ant Design)
    │        │  └─ login-form.module.css  # 로그인 폼 스타일
-   │        └─ signup-form/
-   │           ├─ signup-form.tsx   # 회원가입 폼 (6필드, passwordConfirm 제거 후 전송)
-   │           └─ signup-form.module.css  # 회원가입 폼 스타일
+   │        ├─ signup-form/
+   │        │  ├─ signup-form.tsx   # 회원가입 폼 (6필드, passwordConfirm 제거 후 전송)
+   │        │  └─ signup-form.module.css  # 회원가입 폼 스타일
+   │        ├─ change-password-form/
+   │        │  ├─ change-password-form.tsx    # 비밀번호 변경 모달 폼 (3필드)
+   │        │  └─ change-password-form.module.css
+   │        └─ profile-edit-form/
+   │           ├─ profile-edit-form.tsx       # 프로필 수정 모달 폼 (5필드)
+   │           └─ profile-edit-form.module.css
    │
    └─ pages/                     # 라우트 단위 페이지 컴포넌트
       ├─ login/
@@ -183,6 +200,9 @@ flowdesk-admin-frontend/
       ├─ signup/
       │  ├─ signup-page.tsx      # 회원가입 페이지 (이미 로그인 시 대시보드 리다이렉트)
       │  └─ signup-page.module.css  # 회원가입 페이지 스타일
+      ├─ mypage/
+      │  ├─ mypage-page.tsx      # 마이페이지 (프로필, 역할, 권한, 보안 설정)
+      │  └─ mypage-page.module.css  # 마이페이지 스타일 (2열 반응형 레이아웃)
       └─ dashboard/
          └─ dashboard-page.tsx   # 대시보드 페이지 (보호된 라우트)
 ```
@@ -290,6 +310,7 @@ features/{도메인명}/
 | `/login` | LoginPage | — | 불필요 | 로그인 페이지 (로그인 상태 시 `/dashboard`로 리다이렉트) |
 | `/signup` | SignupPage | — | 불필요 | 회원가입 페이지 (로그인 상태 시 `/dashboard`로 리다이렉트) |
 | `/dashboard` | DashboardPage | MainLayout | **필요** | 대시보드 (ProtectedRoute + MainLayout으로 보호) |
+| `/mypage` | MypagePage | MainLayout | **필요** | 마이페이지 (프로필 정보, 역할/권한, 보안 설정) |
 
 ## 구현 현황
 
@@ -304,9 +325,13 @@ features/{도메인명}/
 | 동적 메뉴 시스템 | ✅ 완료 | API menuTree + 권한 기반 필터링 + 아이콘 매핑 |
 | 권한 시스템 | ✅ 완료 | `{pageName}.{action}` 패턴, hasPermission/filterMenuTree/buildPathNameMap |
 | 메인 레이아웃 | ✅ 완료 | Sidebar + Header + Content (Layout Route + Outlet 패턴) |
-| 사이드바 | ✅ 완료 | 접기/펼치기, 모바일 오버레이, 동적 메뉴, 사용자 정보, 로그아웃 |
-| 헤더 | ✅ 완료 | 토글 버튼, 브레드크럼, 테넌트 뱃지, 알림 Popover, 프로필 Dropdown |
+| 사이드바 | ✅ 완료 | 접기/펼치기, 모바일 오버레이, 동적 메뉴, 사용자 정보(→마이페이지), 로그아웃, 호버 효과 |
+| 헤더 | ✅ 완료 | 토글 버튼, 브레드크럼, 테넌트 뱃지, 알림 Popover, 프로필 Dropdown(→마이페이지/비밀번호 변경 모달) |
 | 브레드크럼 | ✅ 완료 | 동적 pathNameMap 기반 URL → 한국어 이름 매핑 |
+| 마이페이지 | ✅ 완료 | 프로필 정보 조회/수정, 역할/권한 요약, 보안 설정 (로그아웃/전체 로그아웃) |
+| 비밀번호 변경 | ✅ 완료 | 모달 폼 (현재 비밀번호 + 새 비밀번호 + 확인), Zod 검증 (8자+, 영문/숫자/특수문자) |
+| 프로필 수정 | ✅ 완료 | 모달 폼 (회사명, 이름, 이메일, 전화번호, 휴대폰), Zustand + localStorage 즉시 동기화 |
+| 전체 기기 로그아웃 | ✅ 완료 | POST /auth/logout-all API 연동 + 로컬 상태 정리 |
 | CSS 토큰 체계 | ✅ 완료 | CSS Custom Properties 29개 (:root), focus-visible 접근성 |
 | 에러 처리 | ✅ 완료 | AxiosError 타입 래핑 + 에러 코드 매핑 + 한국어 메시지 |
 | 반응형 디자인 | ✅ 완료 | 모바일 대응 (768px 브레이크포인트) |

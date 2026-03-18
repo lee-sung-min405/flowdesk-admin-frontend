@@ -27,6 +27,16 @@
   flex-shrink: 0;
   overflow: hidden;
   cursor: pointer;
+  border-radius: 12px;
+  transition: background var(--transition-base);
+}
+
+.logo:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.logo:hover .logoIcon {
+  transform: scale(1.05);
 }
 
 .sidebar[data-collapsed='true'] .logo {
@@ -45,6 +55,7 @@
   justify-content: center;
   color: #ffffff;
   font-size: 22px;
+  transition: transform var(--transition-base);
 }
 
 .sidebar[data-collapsed='true'] .logoIcon {
@@ -156,6 +167,17 @@
   border-radius: 10px;
   overflow: hidden;
   margin-bottom: 4px;
+  cursor: pointer;
+  transition: background var(--transition-base);
+}
+
+.userInfo:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.userInfo:hover .userAvatar {
+  transform: scale(1.08);
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.2);
 }
 
 .sidebar[data-collapsed='true'] .userInfo {
@@ -175,6 +197,7 @@
   color: #ffffff;
   font-weight: 700;
   font-size: 15px;
+  transition: transform var(--transition-base), box-shadow var(--transition-base);
 }
 
 .userText {

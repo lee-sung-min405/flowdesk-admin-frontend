@@ -101,6 +101,30 @@ export interface SignupResponse {
   };
 }
 
+// 전체 로그아웃 응답 타입
+export interface LogoutAllResponse {
+  ok: boolean;
+}
+
+// 비밀번호 변경 요청 타입
+export interface ChangePasswordRequest {
+  currentPassword: string;
+  newPassword: string;
+  confirmPassword: string;
+}
+
+// 프로필 수정 요청 타입
+export interface UpdateProfileRequest {
+  corpName?: string;
+  userName?: string;
+  userEmail?: string;
+  userTel?: string;
+  userHp?: string;
+}
+
+// 프로필 수정 응답 타입
+export type UpdateProfileResponse = LoginResponse['user'];
+
 // useMe 훅 반환 타입
 export interface UseMeReturn {
   me: MeResponse | null;

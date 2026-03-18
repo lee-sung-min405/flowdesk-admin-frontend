@@ -147,6 +147,7 @@ const queryClient = new QueryClient({
   {/* 인증 필요 + MainLayout 적용 라우트 */}
   <Route element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
     <Route path="/dashboard" element={<DashboardPage />} />
+    <Route path="/mypage" element={<MypagePage />} />
   </Route>
 
   <Route path="/" element={<Navigate to="/login" />} />
@@ -165,6 +166,7 @@ const queryClient = new QueryClient({
 | `/login` | `LoginPage` | — | 공개 | 이미 로그인 시 `/dashboard`로 리다이렉트 |
 | `/signup` | `SignupPage` | — | 공개 | 이미 로그인 시 `/dashboard`로 리다이렉트 |
 | `/dashboard` | `DashboardPage` | `MainLayout` | `ProtectedRoute` | 토큰 없으면 `/login`으로 리다이렉트 |
+| `/mypage` | `MypagePage` | `MainLayout` | `ProtectedRoute` | 프로필 정보, 역할/권한, 보안 설정 |
 
 ### 2.4 메인 레이아웃 구조
 
@@ -197,11 +199,13 @@ const queryClient = new QueryClient({
 - `buildMenuItems()` — MenuTree[] → Ant Design MenuItem[] 재귀 변환
 - `menuIconMap` — pageName → 아이콘 매핑 테이블 (확장 시 이 파일만 수정)
 - 접기/펼치기 + Tooltip, 모바일 오버레이 + 라우트 변경 시 자동 닫힘
-- 하단 사용자 정보(아바타, 이름, 이메일) + 로그아웃 버튼
+- 하단 사용자 정보(아바타, 이름, 이메일) 클릭 시 `/mypage`로 네비게이션 + 로그아웃 버튼
+- 로고/유저 영역 호버 효과 (background, scale, box-shadow 트랜지션)
 
 **Header (`src/widgets/header/header.tsx`):**
 - 사이드바 토글 + 동적 Breadcrumb
 - 테넌트 뱃지(corpName) + 알림 Popover + 프로필 Dropdown
+- 프로필 드롭다운: "내 정보" → `/mypage` 네비게이션, "비밀번호 변경" → ChangePasswordForm 모달
 - `data-scrolled` 속성 기반 스크롤 감지 box-shadow
 
 **Breadcrumb (`src/widgets/breadcrumb/breadcrumb.tsx`):**
@@ -446,6 +450,27 @@ type RefreshTokenResponse = Pick<LoginResponse,
 interface LogoutRequest { refreshToken: string }
 interface LogoutResponse { ok: boolean }
 
+// 전체 기기 로그아웃
+interface LogoutAllResponse { ok: boolean }
+
+// 비밀번호 변경
+interface ChangePasswordRequest {
+  currentPassword: string;    // 현재 비밀번호
+  newPassword: string;        // 새 비밀번호
+  confirmPassword: string;    // 새 비밀번호 확인
+}
+// 응답: void (204 No Content)
+
+// 프로필 수정
+interface UpdateProfileRequest {
+  corpName?: string;
+  userName?: string;
+  userEmail?: string;
+  userTel?: string;
+  userHp?: string;
+}
+type UpdateProfileResponse = LoginResponse['user'];  // user 객체 응답
+
 // 회원가입
 interface SignupRequest {
   companyName: string;    // 회사명 (새 Tenant)
@@ -519,14 +544,15 @@ interface UseMeReturn {
 ```
 features/auth/
 ├─ index.ts                    # Public API — 외부 노출 인터페이스
-│   ├─ export LoginForm, SignupForm  (UI 컴포넌트)
+│   ├─ export LoginForm, SignupForm, ChangePasswordForm, ProfileEditForm  (UI 컴포넌트)
 │   ├─ export useLogin, useSignup    (커스텀 훅)
-│   ├─ export useLogout              (커스텀 훅)
-│   ├─ export useMe                  (커스텀 훅)
-│   ├─ export loginSchema, signupSchema  (Zod 스키마)
+│   ├─ export useLogout, useLogoutAll  (커스텀 훅)
+│   ├─ export useMe                 (커스텀 훅)
+│   ├─ export useChangePassword, useUpdateProfile  (커스텀 훅)
+│   ├─ export loginSchema, signupSchema, changePasswordSchema, updateProfileSchema  (Zod 스키마)
 │   ├─ export hasPermission, hasReadPermission, filterMenuTree, buildPathNameMap (권한 유틸)
-│   ├─ export loginApi, logoutApi, signupApi  (API 함수)
-│   ├─ export meApi                  (API 함수)
+│   ├─ export loginApi, logoutApi, logoutAllApi, signupApi  (API 함수)
+│   ├─ export meApi, changePasswordApi, updateProfileApi  (API 함수)
 │   ├─ export refreshTokenApi        (API 함수)
 │   ├─ export setupAuthAxiosInterceptor  (인터셉터 초기화)
 │   ├─ export authStorage            (localStorage 래퍼)
@@ -536,7 +562,10 @@ features/auth/
 │   ├─ endpoints.ts            API 엔드포인트 경로 상수 (AUTH_ENDPOINTS)
 │   ├─ login.api.ts            POST /auth/login
 │   ├─ logout.api.ts           POST /auth/logout
+│   ├─ logout-all.api.ts       POST /auth/logout-all
 │   ├─ me.api.ts               GET /auth/me
+│   ├─ change-password.api.ts  POST /auth/change-password
+│   ├─ update-profile.api.ts   PATCH /auth/me/profile
 │   ├─ refresh-token.api.ts    POST /auth/refresh-token
 │   └─ signup.api.ts           POST /auth/signup
 │
@@ -550,10 +579,15 @@ features/auth/
 │   ├─ auth.service.ts         비즈니스 로직 (로그인 성공 처리 오케스트레이션)
 │   ├─ login.schema.ts         Zod 유효성 스키마 (tenantName, userId, password)
 │   ├─ signup.schema.ts        Zod 유효성 스키마 (회원가입 6필드 + refine 비밀번호 확인)
+│   ├─ change-password.schema.ts  Zod 유효성 스키마 (비밀번호 규칙 + refine 현재/새 비밀번호 교차검증)
+│   ├─ update-profile.schema.ts  Zod 유효성 스키마 (회사명, 이름, 이메일, 전화번호, 휴대폰)
 │   ├─ use-login.ts            useMutation 기반 로그인 훅
 │   ├─ use-signup.ts           useMutation 기반 회원가입 훅
 │   ├─ use-logout.ts           로그아웃 훅 (API 호출 + 로컬 상태 정리 + 리다이렉트)
+│   ├─ use-logout-all.ts       전체 기기 로그아웃 훅 (useCallback 패턴, API + 로컬 상태 정리)
 │   ├─ use-me.ts               사용자 정보 훅 (Zustand 구독 + 메뉴/권한 파생 데이터)
+│   ├─ use-change-password.ts  useMutation 기반 비밀번호 변경 훅
+│   ├─ use-update-profile.ts   useMutation 기반 프로필 수정 훅 (onSuccess에서 로컬 상태 병합)
 │   └─ use-refresh-token.ts    useMutation 기반 토큰 갱신 훅
 │
 ├─ types/
@@ -563,9 +597,15 @@ features/auth/
     ├─ login-form/
     │  ├─ login-form.tsx       로그인 폼 (React Hook Form + mutateAsync + Ant Design)
     │  └─ login-form.module.css
-    └─ signup-form/
-       ├─ signup-form.tsx      회원가입 폼 (6필드, passwordConfirm 제거 후 전송)
-       └─ signup-form.module.css
+    ├─ signup-form/
+    │  ├─ signup-form.tsx      회원가입 폼 (6필드, passwordConfirm 제거 후 전송)
+    │  └─ signup-form.module.css
+    ├─ change-password-form/
+    │  ├─ change-password-form.tsx     비밀번호 변경 모달 폼 (3필드, Ant Design Modal 내부)
+    │  └─ change-password-form.module.css
+    └─ profile-edit-form/
+       ├─ profile-edit-form.tsx       프로필 수정 모달 폼 (5필드, z.infer 타입)
+       └─ profile-edit-form.module.css
 ```
 
 ---
@@ -689,7 +729,17 @@ const { control, handleSubmit, reset, setFocus, formState: { errors } } = useFor
 - **Controller**: Ant Design 컴포넌트와 React Hook Form 연결
 - **reset()**: 로그인 실패 시 폼 초기화 (DOM 직접 조작 대신 React 방식)
 - **setFocus()**: 초기화 후 첫 번째 필드로 포커스 이동
-- **refine()**: 회원가입 스키마에서 비밀번호 확인 교차 검증에 사용
+- **refine()**: 회원가입/비밀번호 변경 스키마에서 교차 검증에 사용 (비밀번호 확인 일치, 현재/새 비밀번호 상이)
+- **z.infer**: 프로필 수정 폼에서 optional 필드를 포함한 정확한 폼 타입 추론에 사용
+
+**등록된 Zod 스키마:**
+
+| 스키마 | 파일 | 필드 수 | 주요 검증 |
+|--------|------|--------|----------|
+| `loginSchema` | `login.schema.ts` | 3 | 필수 입력 |
+| `signupSchema` | `signup.schema.ts` | 6 | 이메일 형식, 비밀번호 강도, refine 비밀번호 확인 |
+| `changePasswordSchema` | `change-password.schema.ts` | 3 | 8자+ 영문/숫자/특수문자, refine 비밀번호 확인 + 현재와 상이 |
+| `updateProfileSchema` | `update-profile.schema.ts` | 5 | 이메일 형식, 최대 길이, optional 필드 (`userTel`, `userHp`) |
 
 ---
 
@@ -831,7 +881,10 @@ interface ErrorResponse {
 export const AUTH_ENDPOINTS = {
   LOGIN: '/auth/login',
   LOGOUT: '/auth/logout',
+  LOGOUT_ALL: '/auth/logout-all',
   ME: '/auth/me',
+  ME_PROFILE: '/auth/me/profile',
+  CHANGE_PASSWORD: '/auth/change-password',
   REFRESH_TOKEN: '/auth/refresh-token',
   SIGNUP: '/auth/signup',
 } as const;
@@ -846,7 +899,10 @@ export const AUTH_ENDPOINTS = {
 |--------|------|------|----------|----------|
 | POST | `/auth/login` | 로그인 | `LoginRequest` | `LoginResponse` |
 | POST | `/auth/logout` | 로그아웃 (토큰 폐기) | `LogoutRequest` | `LogoutResponse` |
+| POST | `/auth/logout-all` | 전체 기기 로그아웃 | — | `LogoutAllResponse` |
 | GET | `/auth/me` | 현재 사용자 정보 조회 | — | `MeResponse` |
+| POST | `/auth/change-password` | 비밀번호 변경 | `ChangePasswordRequest` | `void` (204) |
+| PATCH | `/auth/me/profile` | 프로필 수정 | `UpdateProfileRequest` | `UpdateProfileResponse` |
 | POST | `/auth/refresh-token` | 토큰 갱신 | `RefreshTokenRequest` | `RefreshTokenResponse` |
 | POST | `/auth/signup` | 회원가입 (Tenant + 관리자 생성) | `SignupRequest` | `SignupResponse` |
 

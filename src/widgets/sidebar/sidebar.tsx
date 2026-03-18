@@ -124,7 +124,13 @@ export default function Sidebar({ collapsed, onCollapse }: SidebarProps) {
         <div className={styles.footer}>
           {me && (
             <Tooltip title={me.user.userName} placement="right" open={isCollapsed ? undefined : false}>
-              <div className={styles.userInfo}>
+              <div
+                className={styles.userInfo}
+                onClick={() => navigate('/mypage')}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => { if (e.key === 'Enter') navigate('/mypage'); }}
+              >
                 <div className={styles.userAvatar}>
                   {me.user.userName?.charAt(0) ?? 'U'}
                 </div>

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Badge, Dropdown, message, Popover } from 'antd';
+import { Badge, Dropdown, message, Modal, Popover } from 'antd';
 import type { MenuProps } from 'antd';
 import {
   MenuFoldOutlined,
@@ -9,8 +9,10 @@ import {
   LogoutOutlined,
   SettingOutlined,
 } from '@ant-design/icons';
+import { useNavigate } from 'react-router-dom';
 import { useMe } from '@features/auth/model/use-me';
 import { useLogout } from '@features/auth/model/use-logout';
+import { ChangePasswordForm } from '@features/auth';
 import Breadcrumb from '@widgets/breadcrumb/breadcrumb';
 import type { HeaderProps } from './header.type';
 import styles from './header.module.css';
@@ -19,6 +21,8 @@ export default function Header({ collapsed, onToggleCollapsed }: HeaderProps) {
   const { me } = useMe();
   const [notificationCount] = useState(0);
   const [scrolled, setScrolled] = useState(false);
+  const [passwordModalOpen, setPasswordModalOpen] = useState(false);
+  const navigate = useNavigate();
   const logout = useLogout();
 
   useEffect(() => {
@@ -63,6 +67,10 @@ export default function Header({ collapsed, onToggleCollapsed }: HeaderProps) {
   const handleProfileMenuClick: MenuProps['onClick'] = ({ key }) => {
     if (key === 'logout') {
       logout();
+    } else if (key === 'profile') {
+      navigate('/mypage');
+    } else if (key === 'settings') {
+      setPasswordModalOpen(true);
     } else {
       message.info('준비 중인 기능입니다');
     }
@@ -129,6 +137,23 @@ export default function Header({ collapsed, onToggleCollapsed }: HeaderProps) {
           </button>
         </Dropdown>
       </div>
+
+      <Modal
+        title="비밀번호 변경"
+        open={passwordModalOpen}
+        onCancel={() => setPasswordModalOpen(false)}
+        footer={null}
+        destroyOnClose
+        width={480}
+      >
+        <ChangePasswordForm
+          onSuccess={() => {
+            setPasswordModalOpen(false);
+            message.success('비밀번호가 변경되었습니다');
+          }}
+          onCancel={() => setPasswordModalOpen(false)}
+        />
+      </Modal>
     </header>
   );
 }
