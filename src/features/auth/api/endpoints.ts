@@ -3,4 +3,5 @@ export const AUTH_ENDPOINTS = {
   LOGOUT: '/auth/logout',
   ME: '/auth/me',
   REFRESH_TOKEN: '/auth/refresh-token',
+  SIGNUP: '/auth/signup',
 } as const;

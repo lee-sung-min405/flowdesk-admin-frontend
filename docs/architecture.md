@@ -17,7 +17,8 @@
   - [3.3 자동 토큰 갱신 (Silent Refresh)](#33-자동-토큰-갱신-silent-refresh)
   - [3.4 보호된 라우트 (Route Guard)](#34-보호된-라우트-route-guard)
   - [3.5 인증 관련 타입](#35-인증-관련-타입)
-  - [3.6 인증 Feature Slice 구조](#36-인증-feature-slice-구조)
+  - [3.6 회원가입 플로우](#36-회원가입-플로우)
+  - [3.7 인증 Feature Slice 구조](#37-인증-feature-slice-구조)
 - [4. 상태 관리 전략](#4-상태-관리-전략)
   - [4.1 서버 상태 — TanStack React Query](#41-서버-상태--tanstack-react-query)
   - [4.2 클라이언트 상태 — Zustand](#42-클라이언트-상태--zustand)
@@ -141,6 +142,7 @@ const queryClient = new QueryClient({
 ```tsx
 <Routes>
   <Route path="/login" element={<LoginPage />} />
+  <Route path="/signup" element={<SignupPage />} />
 
   {/* 인증 필요 + MainLayout 적용 라우트 */}
   <Route element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
@@ -161,6 +163,7 @@ const queryClient = new QueryClient({
 |------|---------|---------|----------|------|
 | `/` | `Navigate` | — | 없음 | `/login`으로 리다이렉트 |
 | `/login` | `LoginPage` | — | 공개 | 이미 로그인 시 `/dashboard`로 리다이렉트 |
+| `/signup` | `SignupPage` | — | 공개 | 이미 로그인 시 `/dashboard`로 리다이렉트 |
 | `/dashboard` | `DashboardPage` | `MainLayout` | `ProtectedRoute` | 토큰 없으면 `/login`으로 리다이렉트 |
 
 ### 2.4 메인 레이아웃 구조
@@ -443,6 +446,21 @@ type RefreshTokenResponse = Pick<LoginResponse,
 interface LogoutRequest { refreshToken: string }
 interface LogoutResponse { ok: boolean }
 
+// 회원가입
+interface SignupRequest {
+  companyName: string;    // 회사명 (새 Tenant)
+  adminName: string;      // 관리자 이름
+  email: string;          // 이메일 (시스템 전체 중복 체크)
+  phone: string;          // 전화번호
+  password: string;       // 비밀번호
+}
+
+interface SignupResponse {
+  message: string;
+  tenant: { tenantId: number; tenantName: string };
+  admin: { userSeq: number; userId: string; userName: string };
+}
+
 // 권한 관련
 type PermissionAction = 'read' | 'create' | 'update' | 'delete';
 type Permissions = Record<string, boolean>;
@@ -457,30 +475,70 @@ interface UseMeReturn {
 }
 ```
 
-### 3.6 인증 Feature Slice 구조
+### 3.6 회원가입 플로우
+
+```
+┌──────────────┐     ┌──────────────┐     ┌──────────────┐     ┌──────────────┐
+│   사용자      │     │  SignupForm   │     │  useSignup()  │     │  서버 API     │
+│  입력 폼      │────▶│  Zod 검증     │────▶│mutateAsync() │────▶│ POST /auth/  │
+│              │     │  (6필드)      │     │              │     │    signup     │
+└──────────────┘     └──────────────┘     └──────┬───────┘     └──────┬───────┘
+                                                  │                     │
+                                                  │  ◀── SignupResponse ──┘
+                                                  │
+                                          ┌───────▼───────┐
+                                          │ 성공:          │
+                                          │ message.success│
+                                          │ navigate       │
+                                          │ ('/login')     │
+                                          └───────────────┘
+```
+
+**상세 단계:**
+
+1. 사용자가 **회사명**, **관리자 이름**, **이메일**, **전화번호**, **비밀번호**, **비밀번호 확인** 입력
+2. `SignupForm`에서 **Zod 스키마** 검증 (`signupSchema`)
+   - 이메일 형식, 비밀번호 8자+ 대문자/숫자/특수문자, 비밀번호 확인 일치 검증
+   - `.refine()`으로 비밀번호 확인 교차 검증
+3. `passwordConfirm` 필드 제거 후 5필드만 `useSignup()` → `signupApi()` → `POST /auth/signup`
+4. 성공 시: `message.success('회원가입이 완료되었습니다.')` → `/login`으로 이동
+5. 실패 시: `getApiErrorMessage()`로 에러 메시지 표시
+   - **400** (`VAL001`): 유효성 검사 실패
+   - **409** (`BIZ001`): 이메일 또는 회사명 중복
+
+> **참고**: 회원가입 후 자동 로그인하지 않고 로그인 페이지로 이동합니다. 이는 향후 이메일 인증 등 추가 단계 확장을 고려한 설계입니다.
+
+**프로세스 (서버 측):**
+1. 이메일 중복 체크 (전체 시스템)
+2. 회사명 중복 체크
+3. 새 Tenant 생성
+4. 관리자 계정 생성 (즉시 활성화)
+
+### 3.7 인증 Feature Slice 구조
 
 ```
 features/auth/
 ├─ index.ts                    # Public API — 외부 노출 인터페이스
-│   ├─ export LoginForm             (UI 컴포넌트)
-│   ├─ export useLogin              (커스텀 훅)
-│   ├─ export useLogout             (커스텀 훅)
-│   ├─ export useMe                 (커스텀 훅)
-│   ├─ export loginSchema           (Zod 스키마)
+│   ├─ export LoginForm, SignupForm  (UI 컴포넌트)
+│   ├─ export useLogin, useSignup    (커스텀 훅)
+│   ├─ export useLogout              (커스텀 훅)
+│   ├─ export useMe                  (커스텀 훅)
+│   ├─ export loginSchema, signupSchema  (Zod 스키마)
 │   ├─ export hasPermission, hasReadPermission, filterMenuTree, buildPathNameMap (권한 유틸)
-│   ├─ export loginApi, logoutApi   (API 함수)
-│   ├─ export meApi                 (API 함수)
-│   ├─ export refreshTokenApi       (API 함수)
+│   ├─ export loginApi, logoutApi, signupApi  (API 함수)
+│   ├─ export meApi                  (API 함수)
+│   ├─ export refreshTokenApi        (API 함수)
 │   ├─ export setupAuthAxiosInterceptor  (인터셉터 초기화)
-│   ├─ export authStorage           (localStorage 래퍼)
-│   └─ export 모든 타입              (타입 정의)
+│   ├─ export authStorage            (localStorage 래퍼)
+│   └─ export 모든 타입               (타입 정의)
 │
 ├─ api/
 │   ├─ endpoints.ts            API 엔드포인트 경로 상수 (AUTH_ENDPOINTS)
 │   ├─ login.api.ts            POST /auth/login
 │   ├─ logout.api.ts           POST /auth/logout
 │   ├─ me.api.ts               GET /auth/me
-│   └─ refresh-token.api.ts    POST /auth/refresh-token
+│   ├─ refresh-token.api.ts    POST /auth/refresh-token
+│   └─ signup.api.ts           POST /auth/signup
 │
 ├─ lib/
 │   ├─ auth-storage.ts         localStorage 래퍼 (토큰 + 사용자 정보 CRUD, JSON.parse 안전 처리)
@@ -491,17 +549,23 @@ features/auth/
 │   ├─ auth.store.ts           Zustand 스토어 (accessToken + me 상태, localStorage hydration)
 │   ├─ auth.service.ts         비즈니스 로직 (로그인 성공 처리 오케스트레이션)
 │   ├─ login.schema.ts         Zod 유효성 스키마 (tenantName, userId, password)
-│   ├─ use-login.ts            useMutation 기반 로그인 훅 (AxiosError<ErrorResponse> 타입)
+│   ├─ signup.schema.ts        Zod 유효성 스키마 (회원가입 6필드 + refine 비밀번호 확인)
+│   ├─ use-login.ts            useMutation 기반 로그인 훅
+│   ├─ use-signup.ts           useMutation 기반 회원가입 훅
 │   ├─ use-logout.ts           로그아웃 훅 (API 호출 + 로컬 상태 정리 + 리다이렉트)
 │   ├─ use-me.ts               사용자 정보 훅 (Zustand 구독 + 메뉴/권한 파생 데이터)
-│   └─ use-refresh-token.ts    useMutation 기반 토큰 갱신 훅 (AxiosError<ErrorResponse> 타입)
+│   └─ use-refresh-token.ts    useMutation 기반 토큰 갱신 훅
 │
 ├─ types/
 │   └─ auth.type.ts            인증/권한 관련 TypeScript 타입/인터페이스
 │
-└─ ui/
-    ├─ login-form.tsx          로그인 폼 (React Hook Form + mutateAsync + Ant Design)
-    └─ login-form.module.css   로그인 폼 스타일 (CSS Modules)
+└─ ui/                         # 컴포넌트별 폴더 분리
+    ├─ login-form/
+    │  ├─ login-form.tsx       로그인 폼 (React Hook Form + mutateAsync + Ant Design)
+    │  └─ login-form.module.css
+    └─ signup-form/
+       ├─ signup-form.tsx      회원가입 폼 (6필드, passwordConfirm 제거 후 전송)
+       └─ signup-form.module.css
 ```
 
 ---
@@ -589,11 +653,28 @@ useAuthStore.getState().setMe(meData);
 ### 4.4 폼 상태 — React Hook Form + Zod
 
 ```typescript
-// Zod 스키마 정의
+// 로그인 Zod 스키마
 const loginSchema = z.object({
   tenantName: z.string().min(1, '업체명을 입력하세요'),
   userId: z.string().min(1, '아이디를 입력하세요'),
   password: z.string().min(1, '비밀번호를 입력하세요'),
+});
+
+// 회원가입 Zod 스키마 (refine으로 교차 검증)
+const signupSchema = z.object({
+  companyName: z.string().min(1, '회사명을 입력하세요'),
+  adminName: z.string().min(1, '관리자 이름을 입력하세요'),
+  email: z.string().min(1, '이메일을 입력하세요').email('올바른 이메일 형식이 아닙니다'),
+  phone: z.string().min(1, '전화번호를 입력하세요'),
+  password: z.string()
+    .min(8, '비밀번호는 8자 이상이어야 합니다')
+    .regex(/[A-Z]/, '대문자를 포함해야 합니다')
+    .regex(/[0-9]/, '숫자를 포함해야 합니다')
+    .regex(/[!@#$%^&*]/, '특수문자를 포함해야 합니다'),
+  passwordConfirm: z.string().min(1, '비밀번호를 다시 입력하세요'),
+}).refine((data) => data.password === data.passwordConfirm, {
+  message: '비밀번호가 일치하지 않습니다',
+  path: ['passwordConfirm'],
 });
 
 // React Hook Form + zodResolver
@@ -608,6 +689,7 @@ const { control, handleSubmit, reset, setFocus, formState: { errors } } = useFor
 - **Controller**: Ant Design 컴포넌트와 React Hook Form 연결
 - **reset()**: 로그인 실패 시 폼 초기화 (DOM 직접 조작 대신 React 방식)
 - **setFocus()**: 초기화 후 첫 번째 필드로 포커스 이동
+- **refine()**: 회원가입 스키마에서 비밀번호 확인 교차 검증에 사용
 
 ---
 
@@ -751,6 +833,7 @@ export const AUTH_ENDPOINTS = {
   LOGOUT: '/auth/logout',
   ME: '/auth/me',
   REFRESH_TOKEN: '/auth/refresh-token',
+  SIGNUP: '/auth/signup',
 } as const;
 ```
 
@@ -765,6 +848,7 @@ export const AUTH_ENDPOINTS = {
 | POST | `/auth/logout` | 로그아웃 (토큰 폐기) | `LogoutRequest` | `LogoutResponse` |
 | GET | `/auth/me` | 현재 사용자 정보 조회 | — | `MeResponse` |
 | POST | `/auth/refresh-token` | 토큰 갱신 | `RefreshTokenRequest` | `RefreshTokenResponse` |
+| POST | `/auth/signup` | 회원가입 (Tenant + 관리자 생성) | `SignupRequest` | `SignupResponse` |
 
 ---
 

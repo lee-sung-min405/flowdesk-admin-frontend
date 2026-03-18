@@ -150,7 +150,8 @@ flowdesk-admin-frontend/
    │     │  ├─ login.api.ts      # POST /auth/login
    │     │  ├─ logout.api.ts     # POST /auth/logout
    │     │  ├─ me.api.ts         # GET /auth/me
-   │     │  └─ refresh-token.api.ts  # POST /auth/refresh-token
+   │     │  ├─ refresh-token.api.ts  # POST /auth/refresh-token
+   │     │  └─ signup.api.ts     # POST /auth/signup
    │     ├─ lib/                 # 비즈니스 로직 헬퍼
    │     │  ├─ auth-storage.ts   # localStorage 토큰/사용자 정보 관리
    │     │  ├─ permission.ts     # 권한 체크 + 메뉴 필터링 + pathNameMap 빌드
@@ -159,20 +160,29 @@ flowdesk-admin-frontend/
    │     │  ├─ auth.store.ts     # Zustand 인증 상태 스토어 (accessToken + me)
    │     │  ├─ auth.service.ts   # 로그인 성공 처리, 사용자 정보 관리
    │     │  ├─ login.schema.ts   # Zod 로그인 폼 유효성 스키마
+   │     │  ├─ signup.schema.ts  # Zod 회원가입 폼 유효성 스키마 (refine 비밀번호 확인)
    │     │  ├─ use-login.ts      # useLogin() React Query 뮤테이션 훅
+   │     │  ├─ use-signup.ts     # useSignup() React Query 뮤테이션 훅
    │     │  ├─ use-logout.ts     # useLogout() 로그아웃 훅 (API + 로컬 상태 정리)
    │     │  ├─ use-me.ts         # useMe() 사용자/메뉴/권한 훅 (Zustand 구독)
    │     │  └─ use-refresh-token.ts  # useRefreshToken() 뮤테이션 훅
    │     ├─ types/               # 도메인 타입 정의
-   │     │  └─ auth.type.ts      # LoginRequest/Response, MeResponse, MenuTree, 권한 타입 등
-   │     └─ ui/                  # 도메인 UI 컴포넌트
-   │        ├─ login-form.tsx    # 로그인 폼 (React Hook Form + Zod + Ant Design)
-   │        └─ login-form.module.css  # 로그인 폼 스타일
+   │     │  └─ auth.type.ts      # LoginRequest/Response, SignupRequest/Response, MeResponse, MenuTree, 권한 타입 등
+   │     └─ ui/                  # 도메인 UI 컴포넌트 (컴포넌트별 폴더 분리)
+   │        ├─ login-form/
+   │        │  ├─ login-form.tsx    # 로그인 폼 (React Hook Form + Zod + Ant Design)
+   │        │  └─ login-form.module.css  # 로그인 폼 스타일
+   │        └─ signup-form/
+   │           ├─ signup-form.tsx   # 회원가입 폼 (6필드, passwordConfirm 제거 후 전송)
+   │           └─ signup-form.module.css  # 회원가입 폼 스타일
    │
    └─ pages/                     # 라우트 단위 페이지 컴포넌트
       ├─ login/
       │  ├─ login-page.tsx       # 로그인 페이지 (이미 로그인 시 대시보드 리다이렉트)
       │  └─ login-page.module.css  # 로그인 페이지 스타일
+      ├─ signup/
+      │  ├─ signup-page.tsx      # 회원가입 페이지 (이미 로그인 시 대시보드 리다이렉트)
+      │  └─ signup-page.module.css  # 회원가입 페이지 스타일
       └─ dashboard/
          └─ dashboard-page.tsx   # 대시보드 페이지 (보호된 라우트)
 ```
@@ -229,6 +239,7 @@ src/
 │
 └─ pages/              # 라우트 단위 페이지 컴포넌트
    ├─ login/           # 로그인 페이지
+   ├─ signup/          # 회원가입 페이지
    └─ dashboard/       # 대시보드 페이지
 ```
 
@@ -251,9 +262,10 @@ features/{도메인명}/
 │  └─ {도메인}.type.ts
 ├─ lib/                # 순수 헬퍼 함수, 스토리지 래퍼 등
 │  └─ {도메인}-{기능}.ts
-└─ ui/                 # 도메인 UI 컴포넌트 + CSS Modules
-   ├─ {컴포넌트}.tsx
-   └─ {컴포넌트}.module.css
+└─ ui/                 # 도메인 UI 컴포넌트 + CSS Modules (컴포넌트별 폴더 분리)
+   ├─ {컴포넌트}/
+   │  ├─ {컴포넌트}.tsx
+   │  └─ {컴포넌트}.module.css
 ```
 
 ### Path Alias
@@ -276,6 +288,7 @@ features/{도메인명}/
 |------|--------|---------|----------|------|
 | `/` | — | — | — | `/login`으로 리다이렉트 |
 | `/login` | LoginPage | — | 불필요 | 로그인 페이지 (로그인 상태 시 `/dashboard`로 리다이렉트) |
+| `/signup` | SignupPage | — | 불필요 | 회원가입 페이지 (로그인 상태 시 `/dashboard`로 리다이렉트) |
 | `/dashboard` | DashboardPage | MainLayout | **필요** | 대시보드 (ProtectedRoute + MainLayout으로 보호) |
 
 ## 구현 현황
@@ -283,6 +296,7 @@ features/{도메인명}/
 | 기능 | 상태 | 설명 |
 |------|------|------|
 | 멀티 테넌트 로그인 | ✅ 완료 | 업체명 + 아이디 + 비밀번호 기반 로그인 |
+| 회원가입 | ✅ 완료 | Tenant + 관리자 동시 생성, Zod 검증 (이메일/비밀번호 강도), 중복 에러 처리 |
 | JWT 토큰 관리 | ✅ 완료 | Access/Refresh 토큰 localStorage 저장 + Zustand 동기화 |
 | 자동 토큰 갱신 | ✅ 완료 | DI 패턴 인터셉터 기반 401 응답 시 자동 리프레시 + 실패 시 로그아웃 |
 | 보호된 라우트 | ✅ 완료 | ProtectedRoute (Zustand + localStorage 이중 체크) |

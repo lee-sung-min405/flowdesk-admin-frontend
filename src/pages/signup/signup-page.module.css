@@ -1,0 +1,106 @@
+.container {
+	min-height: 100vh;
+	background: #ededed;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-family: 'Pretendard', 'Noto Sans KR', Arial, sans-serif;
+	padding: 24px 0;
+}
+
+@media (max-width: 600px) {
+	.container {
+		align-items: center;
+		padding: 16px 0;
+		min-height: 100dvh;
+	}
+}
+
+.card {
+	width: 480px;
+	max-width: 98vw;
+	border-radius: 14px;
+	box-shadow: 0 4px 24px rgba(0, 0, 0, 0.13);
+	padding: 48px 44px 32px 44px;
+	background: #fff;
+	border: none;
+	border-top: 6px solid #233d7b;
+	display: flex;
+	flex-direction: column;
+	align-items: stretch;
+	position: relative;
+	transition: width 0.2s, padding 0.2s;
+}
+
+@media (max-width: 600px) {
+	.card {
+		width: 100%;
+		min-width: 0;
+		max-width: 92vw;
+		border-radius: 10px;
+		padding: 10vw 9vw 8vw 9vw;
+		box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+	}
+}
+
+.logoWrapper {
+	text-align: center;
+	margin-bottom: 28px;
+}
+
+.logoTitleWrapper {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 4px;
+	margin-bottom: 2px;
+}
+
+.logoText {
+	font-size: 2.1rem;
+	font-weight: 800;
+	color: #233d7b;
+	letter-spacing: -1.2px;
+	font-family: 'Pretendard', 'Noto Sans KR', Arial, sans-serif;
+	text-align: center;
+}
+
+.logoSubtitle {
+	font-size: 1.05rem;
+	color: #4b5a7a;
+	font-weight: 400;
+	letter-spacing: -0.5px;
+	margin-top: 2px;
+	text-align: center;
+}
+
+.loginText {
+	margin-top: 20px;
+	text-align: center;
+	font-size: 14px;
+	color: #888;
+	letter-spacing: -0.5px;
+}
+
+@media (max-width: 600px) {
+	.loginText {
+		font-size: 13px;
+		margin-top: 16px;
+	}
+}
+
+.copyright {
+	margin-top: 18px;
+	text-align: center;
+	color: #aaa;
+	font-size: 13px;
+	letter-spacing: -0.5px;
+}
+
+@media (max-width: 600px) {
+	.copyright {
+		font-size: 12px;
+		margin-top: 14px;
+		padding-bottom: 0;
+	}
+}

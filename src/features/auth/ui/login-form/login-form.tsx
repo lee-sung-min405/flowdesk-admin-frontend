@@ -5,14 +5,12 @@ import { useForm, Controller } from 'react-hook-form';
 import React from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 
-
-import type { LoginRequest } from '../types/auth.type';
-import { useLogin } from '../model/use-login';
-import { useNavigate } from 'react-router-dom';
-import { loginSchema } from '../model/login.schema';
-import { getApiErrorMessage } from '@shared/utils/api-error-message';
 import styles from './login-form.module.css';
-
+import type { LoginRequest } from '../../types/auth.type';
+import { useLogin } from '../../model/use-login';
+import { useNavigate } from 'react-router-dom';
+import { loginSchema } from '../../model/login.schema';
+import { getApiErrorMessage } from '@shared/utils/api-error-message';
 
 export default function LoginForm() {
   const { control, handleSubmit, reset, setFocus, formState: { errors } } = useForm<LoginRequest>({

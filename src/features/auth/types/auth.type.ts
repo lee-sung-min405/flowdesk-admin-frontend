@@ -78,6 +78,29 @@ export interface LogoutResponse {
 export type PermissionAction = 'read' | 'create' | 'update' | 'delete';
 export type Permissions = Record<string, boolean>;
 
+// 회원가입 요청 타입
+export interface SignupRequest {
+  companyName: string;
+  adminName: string;
+  email: string;
+  phone: string;
+  password: string;
+}
+
+// 회원가입 응답 타입
+export interface SignupResponse {
+  message: string;
+  tenant: {
+    tenantId: number;
+    tenantName: string;
+  };
+  admin: {
+    userSeq: number;
+    userId: string;
+    userName: string;
+  };
+}
+
 // useMe 훅 반환 타입
 export interface UseMeReturn {
   me: MeResponse | null;
