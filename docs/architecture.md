@@ -51,6 +51,7 @@
   - [11.5 페이지 관리 Feature](#115-페이지-관리-feature-featuresadmin-page)
   - [11.6 액션 관리 Feature](#116-액션-관리-feature-featuresadmin-action)
   - [11.7 권한 관리 Feature](#117-권한-관리-feature-featuresadmin-permission)
+  - [11.8 권한 카탈로그 Feature](#118-권한-카탈로그-feature-featurespermission-catalog)
 
 ---
 
@@ -1468,6 +1469,8 @@ features/user/
    ├─ user-table/                    # 사용자 목록 테이블
    │  ├─ user-table.tsx              # AntD Table + 정렬 + 페이지네이션 + Dropdown 액션 메뉴
    │  └─ user-table.module.css       #   ├─ 액션: 정보 수정, 상태 변경, 비밀번호 초기화, 강제 로그아웃
+   ├─ user-detail/                   # 사용자 상세 보기
+   │  └─ user-detail.tsx             # Descriptions (bordered, 2열) — 기본정보 + 역할 목록
    ├─ user-create-form/              # 사용자 생성 폼
    │  ├─ user-create-form.tsx        # RHF + Zod + Controller 패턴 (7필드)
    │  └─ user-create-form.module.css
@@ -1482,7 +1485,7 @@ features/user/
 **사용자 관리 페이지 (`pages/user/user-page.tsx`):**
 - 페이지 헤더: 제목 + 총 사용자 수 Badge + 검색/필터 툴바 + 생성 버튼
 - 테이블: 아이디, 이름, 회사명, 이메일, 상태(Tooltip으로 정지일 표시), 등록일, Dropdown 액션 메뉴
-- 모달: 사용자 생성, 사용자 수정(역할 포함), 비밀번호 초기화
+- 모달: 사용자 생성, 사용자 수정(역할 포함), 비밀번호 초기화, **상세 보기(Descriptions)**
 - 확인 다이얼로그: 상태 변경(활성↔정지), 강제 로그아웃
 
 **주요 타입:**
@@ -1694,6 +1697,8 @@ features/tenant/
    ├─ tenant-table/                      # 테넌트 목록 테이블
    │  ├─ tenant-table.tsx                # AntD Table + 정렬 + 페이지네이션 + Dropdown 액션 메뉴
    │  └─ tenant-table.module.css         #   ├─ 액션: 정보 수정, 상태 변경, 삭제
+   ├─ tenant-detail/                     # 테넌트 상세 보기
+   │  └─ tenant-detail.tsx               # Descriptions (bordered, 2열) — 기본정보, 도메인, 상태, 일시
    ├─ tenant-create-form/                # 테넌트 생성 폼
    │  ├─ tenant-create-form.tsx          # RHF + Zod + Controller 패턴 (3필드)
    │  └─ tenant-create-form.module.css
@@ -1705,7 +1710,7 @@ features/tenant/
 **테넌트 관리 페이지 (`pages/tenant/tenant-page.tsx`):**
 - 페이지 헤더: 제목 + 총 테넌트 수 Badge + 검색/필터 툴바 + 생성 버튼
 - 테이블: 테넌트 ID, 테넌트명, 표시 이름, 도메인, 사용자 수, 상태(활성/비활성), 생성일, 수정일, Dropdown 액션 메뉴
-- 모달: 테넌트 생성, 테넌트 수정(기본정보/도메인 섹션 분리)
+- 모달: 테넌트 생성, 테넌트 수정(기본정보/도메인 섹션 분리), **상세 보기(Descriptions)**
 - 확인 다이얼로그: 상태 변경(활성↔비활성), 삭제(사용자 존재 시 차단 안내)
 
 **주요 타입:**
@@ -1925,3 +1930,92 @@ features/admin-permission/
 | 계층 구조 | 있음 (parentId, children) | 없음 | 페이지+액션 조합 |
 | 상세 보기 | Descriptions + 하위 페이지 Table | Descriptions | Descriptions (페이지/액션 Tag+code) |
 | 크로스 피처 | 없음 | 없음 | admin-page + admin-action |
+
+### 11.8 권한 카탈로그 Feature (`features/permission-catalog/`)
+
+전체 페이지×액션 권한 매트릭스를 **트리 구조**로 시각화하는 읽기 전용 카탈로그 페이지입니다. `CatalogPage.parentId`를 활용하여 페이지를 계층적으로 표시하며, 접기/펼치기 및 검색 필터링을 지원합니다.
+
+**Feature Slice 구조:**
+
+```
+features/permission-catalog/
+├─ index.ts                                    # Public API (PermissionMatrix, usePermissionCatalog, 타입)
+├─ api/
+│  ├─ permission-catalog.endpoint.ts           # PERMISSION_CATALOG_ENDPOINTS = { CATALOG: '/permissions/catalog' }
+│  └─ get-permission-catalog.api.ts            # GET /permissions/catalog
+├─ model/
+│  └─ use-permission-catalog.ts                # useQuery — 카탈로그 조회 (queryKey: ['permission-catalog'])
+├─ types/
+│  └─ permission-catalog.type.ts               # CatalogPage, CatalogAction, CatalogPermission, MatrixEntry, GetPermissionCatalogResponse
+└─ ui/
+   └─ permission-matrix/
+      ├─ permission-matrix.tsx                 # 트리 구조 권한 매트릭스 (접기/펼치기, 검색, 요약 바)
+      └─ permission-matrix.module.css          # 스티키 컬럼, 행 스트라이핑, 호버, 트리 들여쓰기
+```
+
+**주요 타입:**
+
+```typescript
+// 페이지 항목 (트리 구조 지원)
+interface CatalogPage {
+  pageId: number;
+  parentId: number | null;   // 트리 구조 — null이면 루트 노드
+  pageName: string;
+  path: string;
+  displayName: string;
+  description: string | null;
+  sortOrder: number | null;  // 같은 레벨 내 정렬 순서
+}
+
+// 액션 항목 (테이블 컬럼 헤더로 사용)
+interface CatalogAction {
+  actionId: number;
+  actionName: string;       // read, create, update, delete 등
+  displayName: string;
+}
+
+// 권한 항목 (툴팁 상세 정보용)
+interface CatalogPermission {
+  permissionId: number;
+  pageId: number;
+  actionId: number;
+  displayName: string | null;
+  description: string | null;
+}
+
+// 매트릭스 셀 데이터
+interface MatrixEntry {
+  actionName: string;
+  permissionId: number;
+}
+
+// API 응답 — matrix는 pageName을 키로 한 Record
+interface GetPermissionCatalogResponse {
+  pages: CatalogPage[];
+  actions: CatalogAction[];
+  permissions: CatalogPermission[];
+  matrix: Record<string, MatrixEntry[]>;
+}
+```
+
+**PermissionMatrix 컴포넌트 핵심 기능:**
+
+| 기능 | 구현 방식 |
+|------|---------|
+| **트리 구조** | `buildTree()` — `parentId` 기반 `TreeNode[]` 변환, `sortOrder` 정렬, 재귀적 depth 계산 |
+| **접기/펼치기** | `expandedIds` Set 상태, 노드별 토글, 전체 펼치기/접기 버튼 |
+| **검색 필터** | `filterTree()` — displayName, pageName, path 매칭 + 조상 경로 보존 |
+| **요약 통계 바** | 페이지 수, 액션 수, 권한 수 + 검색 시 결과 수 |
+| **스티키 컬럼** | 첫 번째 컬럼(페이지명) 고정 (min 300px ~ max 400px) |
+| **트리 시각화** | depth별 들여쓰기 (20px/depth), `FolderOutlined`/`FileOutlined` 아이콘, `▶/▼` 토글 |
+| **셀 상태** | 할당: 초록 배경 + `CheckCircleFilled`, 미할당: `—` 대시 |
+| **툴팁** | 할당된 셀 hover 시 권한 ID, 이름, 설명 표시 |
+| **행 스트라이핑** | 짝수 행 배경색 + 마우스 hover 하이라이트 |
+
+**권한 카탈로그 페이지 (`pages/permission-catalog/permission-catalog-page.tsx`):**
+- 라우트: `/permissions/catalog`
+- 페이지 헤더: 제목 "권한 카탈로그" + 설명 + 검색 Input(SearchOutlined prefix, allowClear)
+- `searchKeyword` 상태를 PermissionMatrix에 전달하여 실시간 필터링
+- 읽기 전용 페이지로 CRUD 없음, 단일 API 호출(`GET /permissions/catalog`)
+
+> **설계 의도**: 권한 카탈로그는 RBAC 관리(페이지/액션/권한) 3 feature와 별도의 읽기 전용 슬라이스로 분리합니다. 복잡한 매트릭스 데이터를 하나의 API에서 받아 프론트엔드에서 트리 변환/플래트닝/필터링을 수행하며, 관리자가 전체 권한 구조를 한눈에 파악할 수 있도록 합니다.

@@ -15,6 +15,7 @@ const SuperDashboardPage = lazy(() => import('@pages/super-dashboard/super-dashb
 const AdminPageManagePage = lazy(() => import('@pages/admin-page-manage/admin-page-manage-page'));
 const AdminActionManagePage = lazy(() => import('@pages/admin-action-manage/admin-action-manage-page'));
 const AdminPermissionManagePage = lazy(() => import('@pages/admin-permission-manage/admin-permission-manage-page'));
+const PermissionCatalogPage = lazy(() => import('@pages/permission-catalog/permission-catalog-page'));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -46,6 +47,7 @@ export default function App() {
               <Route path="/permissions/admin/pages" element={<AdminPageManagePage />} />
               <Route path="/permissions/admin/actions" element={<AdminActionManagePage />} />
               <Route path="/permissions/admin/permissions" element={<AdminPermissionManagePage />} />
+              <Route path="/permissions/catalog" element={<PermissionCatalogPage />} />
             </Route>
 
             <Route path="/" element={<Navigate to="/login" />} />

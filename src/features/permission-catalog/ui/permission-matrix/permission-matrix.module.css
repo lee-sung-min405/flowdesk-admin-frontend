@@ -1,0 +1,319 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.loadingContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 300px;
+}
+
+/* ── 상단 요약 바 ── */
+.summaryBar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 16px;
+  background: var(--color-bg-elevated, #fafafa);
+  border-radius: 8px;
+}
+
+.summaryItem {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.summaryNumber {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--color-text);
+  line-height: 1;
+}
+
+.summaryLabel {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+
+.summaryDivider {
+  width: 1px;
+  height: 24px;
+  background: var(--color-border);
+}
+
+.summaryActions {
+  margin-left: auto;
+  display: flex;
+  gap: 6px;
+}
+
+.treeToggleBtn {
+  padding: 3px 10px;
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  background: #fff;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s;
+  line-height: 1.4;
+}
+
+.treeToggleBtn:hover {
+  color: var(--color-primary, #1677ff);
+  border-color: var(--color-primary, #1677ff);
+}
+
+/* ── 매트릭스 테이블 ── */
+.matrixWrapper {
+  overflow-x: auto;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+}
+
+.matrixTable {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 13px;
+}
+
+.matrixTable th,
+.matrixTable td {
+  padding: 0;
+  border-bottom: 1px solid var(--color-border);
+  border-right: 1px solid var(--color-border);
+}
+
+.matrixTable th:last-child,
+.matrixTable td:last-child {
+  border-right: none;
+}
+
+.matrixTable tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* ── 스티키 첫 번째 컬럼 ── */
+.stickyCol {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  background: #fff;
+  min-width: 300px;
+  max-width: 400px;
+}
+
+thead .stickyCol {
+  z-index: 3;
+  background: var(--color-bg-elevated, #fafafa);
+}
+
+/* ── 헤더 ── */
+.matrixTable thead th {
+  background: var(--color-bg-elevated, #fafafa);
+  font-weight: 600;
+  color: var(--color-text);
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.headerPageCell {
+  padding: 14px 16px;
+  text-align: left;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-text-secondary);
+}
+
+.actionHeader {
+  min-width: 100px;
+}
+
+.actionHeaderContent {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 10px 12px;
+}
+
+.actionDisplayName {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.actionCode {
+  font-size: 10px;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: rgba(0, 0, 0, 0.04);
+  color: var(--color-text-secondary);
+  font-weight: 400;
+}
+
+/* ── 페이지 셀 (첫 번째 컬럼) ── */
+.pageCellContent {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 16px;
+  transition: padding-left 0.15s;
+}
+
+.pageCellMain {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.expandBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: var(--color-text-secondary);
+  border-radius: 3px;
+  flex-shrink: 0;
+  transition: all 0.15s;
+}
+
+.expandBtn:hover {
+  background: rgba(0, 0, 0, 0.06);
+  color: var(--color-text);
+}
+
+.expandIcon {
+  font-size: 10px;
+}
+
+.leafIndent {
+  display: inline-block;
+  width: 18px;
+  flex-shrink: 0;
+}
+
+.nodeIcon {
+  display: inline-flex;
+  align-items: center;
+  font-size: 14px;
+  color: var(--color-text-tertiary, #bbb);
+  flex-shrink: 0;
+}
+
+.pageDisplayName {
+  font-weight: 500;
+  color: var(--color-text);
+  font-size: 13px;
+}
+
+.permCountTag {
+  font-size: 10px !important;
+  line-height: 16px !important;
+  padding: 0 5px !important;
+  border-radius: 8px !important;
+  margin: 0 !important;
+}
+
+.pageCode {
+  font-size: 11px;
+  color: var(--color-text-secondary);
+  opacity: 0.7;
+}
+
+.pagePath {
+  font-size: 11px;
+  color: var(--color-text-tertiary, #bbb);
+}
+
+.pageMeta {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+/* ── 데이터 셀 ── */
+.cellEmpty {
+  text-align: center;
+  background: #fff;
+}
+
+.cellAssigned {
+  text-align: center;
+  background: rgba(82, 196, 26, 0.04);
+}
+
+.emptyDash {
+  color: var(--color-border);
+  font-size: 14px;
+  user-select: none;
+}
+
+.assignedCell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 12px;
+  cursor: default;
+}
+
+.checkIcon {
+  color: #52c41a;
+  font-size: 18px;
+}
+
+/* ── 행 스트라이핑 & 호버 ── */
+.evenRow td {
+  background: rgba(0, 0, 0, 0.015);
+}
+
+.evenRow .stickyCol {
+  background: #fafbfc;
+}
+
+.evenRow .cellAssigned {
+  background: rgba(82, 196, 26, 0.06);
+}
+
+.matrixTable tbody tr:hover td {
+  background: rgba(24, 144, 255, 0.04);
+}
+
+.matrixTable tbody tr:hover .stickyCol {
+  background: rgba(24, 144, 255, 0.06);
+}
+
+.matrixTable tbody tr:hover .cellAssigned {
+  background: rgba(82, 196, 26, 0.1);
+}
+
+/* ── 툴팁 ── */
+.tooltipContent {
+  font-size: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.tooltipRow {
+  display: flex;
+  gap: 8px;
+}
+
+.tooltipLabel {
+  color: rgba(255, 255, 255, 0.65);
+  min-width: 48px;
+  flex-shrink: 0;
+}
