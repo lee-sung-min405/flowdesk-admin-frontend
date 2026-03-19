@@ -1,4 +1,5 @@
 export { default as TenantTable } from './ui/tenant-table/tenant-table.tsx';
+export { default as TenantDetail } from './ui/tenant-detail/tenant-detail.tsx';
 export { default as TenantCreateForm } from './ui/tenant-create-form/tenant-create-form.tsx';
 export { default as TenantEditForm } from './ui/tenant-edit-form/tenant-edit-form.tsx';
 

@@ -3,6 +3,7 @@ import { Button, Modal, Input, Select, message } from 'antd';
 import { PlusOutlined, ExclamationCircleOutlined, SearchOutlined } from '@ant-design/icons';
 import {
   TenantTable,
+  TenantDetail,
   TenantCreateForm,
   TenantEditForm,
   useTenants,
@@ -18,9 +19,11 @@ const { confirm } = Modal;
 export default function TenantPage() {
   const [params, setParams] = useState<GetTenantsRequest>({ page: 1, limit: 20 });
   const [createModalOpen, setCreateModalOpen] = useState(false);
+  const [detailTarget, setDetailTarget] = useState<Tenant | null>(null);
   const [editTarget, setEditTarget] = useState<Tenant | null>(null);
 
   const { data, isLoading } = useTenants(params);
+  const { data: detailData, isLoading: detailLoading } = useTenant(detailTarget?.tenantId ?? 0);
   const { data: editTenantDetail } = useTenant(editTarget?.tenantId ?? 0);
   const updateStatus = useUpdateTenantStatus();
   const deleteTenant = useDeleteTenant();
@@ -124,11 +127,24 @@ export default function TenantPage() {
           loading={isLoading}
           params={params}
           onParamsChange={setParams}
+          onDetail={setDetailTarget}
           onEdit={setEditTarget}
           onToggleStatus={handleToggleStatus}
           onDelete={handleDelete}
         />
       </div>
+
+      {/* 테넌트 상세 보기 모달 */}
+      <Modal
+        title={detailTarget ? `${detailTarget.displayName}(${detailTarget.tenantName}) 상세` : '테넌트 상세'}
+        open={!!detailTarget}
+        onCancel={() => setDetailTarget(null)}
+        footer={null}
+        destroyOnClose
+        width={560}
+      >
+        <TenantDetail data={detailData} loading={detailLoading} />
+      </Modal>
 
       {/* 테넌트 생성 모달 */}
       <Modal

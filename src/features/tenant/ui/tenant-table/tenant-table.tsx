@@ -1,5 +1,6 @@
 import { Table, Badge, Button, Dropdown } from 'antd';
 import {
+  EyeOutlined,
   EditOutlined,
   PoweroffOutlined,
   DeleteOutlined,
@@ -15,6 +16,7 @@ interface TenantTableProps {
   loading: boolean;
   params: GetTenantsRequest;
   onParamsChange: (params: GetTenantsRequest) => void;
+  onDetail: (tenant: Tenant) => void;
   onEdit: (tenant: Tenant) => void;
   onToggleStatus: (tenant: Tenant) => void;
   onDelete: (tenant: Tenant) => void;
@@ -25,11 +27,18 @@ export default function TenantTable({
   loading,
   params,
   onParamsChange,
+  onDetail,
   onEdit,
   onToggleStatus,
   onDelete,
 }: TenantTableProps) {
   const getActionMenuItems = (record: Tenant): MenuProps['items'] => [
+    {
+      key: 'detail',
+      icon: <EyeOutlined />,
+      label: '상세 보기',
+      onClick: () => onDetail(record),
+    },
     {
       key: 'edit',
       icon: <EditOutlined />,
