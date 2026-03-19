@@ -1,0 +1,111 @@
+.wrapper {
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid var(--color-border);
+  padding: 4px;
+  overflow: hidden;
+}
+
+/* ── Ant Table 커스텀 ── */
+.table :global(.ant-table) {
+  background: transparent;
+}
+
+.table :global(.ant-table-thead > tr > th) {
+  background: var(--color-bg);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  border-bottom: 1px solid var(--color-border);
+  padding: 10px 12px;
+}
+
+.table :global(.ant-table-tbody > tr > td) {
+  font-size: 13px;
+  color: var(--color-text);
+  border-bottom: 1px solid #f5f5f5;
+  padding: 10px 12px;
+  transition: background var(--transition-base);
+}
+
+.table :global(.ant-table-tbody > tr:hover > td) {
+  background: rgba(35, 61, 123, 0.02);
+}
+
+.table :global(.ant-table-tbody > tr:last-child > td) {
+  border-bottom: none;
+}
+
+/* ── 셀 스타일 ── */
+.tenantName {
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.dateCell {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── 상태 뱃지 ── */
+.statusActive,
+.statusInactive {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+
+.statusActive {
+  color: #389e0d;
+  background: #f6ffed;
+}
+
+.statusInactive {
+  color: #cf1322;
+  background: #fff1f0;
+}
+
+.statusDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+/* ── 강조 값 ── */
+.highlight {
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+.warn {
+  color: #cf1322;
+  font-weight: 600;
+}
+
+/* ── 반응형 ── */
+@media (max-width: 768px) {
+  .wrapper {
+    border-radius: 10px;
+    padding: 2px;
+  }
+
+  .table :global(.ant-table-thead > tr > th),
+  .table :global(.ant-table-tbody > tr > td) {
+    padding: 8px 10px;
+  }
+}
+
+@media (max-width: 576px) {
+  .wrapper {
+    margin-left: -4px;
+    margin-right: -4px;
+  }
+}

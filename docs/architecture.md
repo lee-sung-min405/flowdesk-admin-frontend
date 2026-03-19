@@ -46,6 +46,7 @@
 - [11. 구현된 Feature Slice 상세](#11-구현된-feature-slice-상세)
   - [11.1 사용자 관리 Feature](#111-사용자-관리-feature-featuresuser)
   - [11.2 역할 관리 Feature](#112-역할-관리-feature-featuresrole)
+  - [11.3 슈퍼 관리자 대시보드 Feature](#113-슈퍼-관리자-대시보드-feature-featuressuper-dashboard)
 
 ---
 
@@ -142,21 +143,39 @@ const queryClient = new QueryClient({
 
 ### 2.3 라우팅
 
+모든 페이지는 `React.lazy()`로 동적 import되어 라우트별 코드 스플리팅이 적용됩니다.
+
 ```tsx
-<Routes>
-  <Route path="/login" element={<LoginPage />} />
-  <Route path="/signup" element={<SignupPage />} />
+// 페이지 동적 import (React.lazy)
+const LoginPage = lazy(() => import('@pages/login/login-page'));
+const SignupPage = lazy(() => import('@pages/signup/signup-page'));
+const DashboardPage = lazy(() => import('@pages/dashboard/dashboard-page'));
+const MypagePage = lazy(() => import('@pages/mypage/mypage-page'));
+const UserPage = lazy(() => import('@pages/user/user-page'));
+const SuperDashboardPage = lazy(() => import('@pages/super-dashboard/super-dashboard-page'));
 
-  {/* 인증 필요 + MainLayout 적용 라우트 */}
-  <Route element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
-    <Route path="/dashboard" element={<DashboardPage />} />
-    <Route path="/mypage" element={<MypagePage />} />
-    <Route path="/users" element={<UserPage />} />
-  </Route>
+<Suspense fallback={<Spin />}>
+  <Routes>
+    <Route path="/login" element={<LoginPage />} />
+    <Route path="/signup" element={<SignupPage />} />
 
-  <Route path="/" element={<Navigate to="/login" />} />
-</Routes>
+    {/* 인증 필요 + MainLayout 적용 라우트 */}
+    <Route element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
+      <Route path="/dashboard" element={<DashboardPage />} />
+      <Route path="/mypage" element={<MypagePage />} />
+      <Route path="/users" element={<UserPage />} />
+      <Route path="/super/dashboard" element={<SuperDashboardPage />} />
+    </Route>
+
+    <Route path="/" element={<Navigate to="/login" />} />
+  </Routes>
+</Suspense>
 ```
+
+**코드 스플리팅 전략:**
+- 모든 페이지 컴포넌트를 `React.lazy()`로 동적 import하여 각 페이지가 별도 청크로 분리됨
+- `Suspense`로 감싸 로딩 중 Ant Design `Spin` 컴포넌트 표시
+- `antd`, `recharts` 등 대형 라이브러리가 해당 페이지 접근 시에만 로드되어 초기 번들 크기 최적화
 
 **Layout Route 패턴:**
 - `MainLayout`은 `<Outlet />`을 통해 자식 라우트를 렌더링합니다
@@ -172,6 +191,7 @@ const queryClient = new QueryClient({
 | `/dashboard` | `DashboardPage` | `MainLayout` | `ProtectedRoute` | 토큰 없으면 `/login`으로 리다이렉트 |
 | `/mypage` | `MypagePage` | `MainLayout` | `ProtectedRoute` | 프로필 정보, 역할/권한, 보안 설정 |
 | `/users` | `UserPage` | `MainLayout` | `ProtectedRoute` | 사용자 관리 (CRUD, 상태 변경, 역할 설정) |
+| `/super/dashboard` | `SuperDashboardPage` | `MainLayout` | `ProtectedRoute` | 슈퍼 관리자 대시보드 (전체 시스템 현황) |
 
 ### 2.4 메인 레이아웃 구조
 
@@ -913,6 +933,11 @@ export const USER_ENDPOINTS = {
 export const ROLE_ENDPOINTS = {
   LIST: '/roles',
 } as const;
+
+// src/features/super-dashboard/api/super-dashboard.endpoint.ts
+export const SUPER_DASHBOARD_ENDPOINTS = {
+  DASHBOARD: '/super/dashboard',
+} as const;
 ```
 
 - 상수 파일을 분리하여 API 경로 변경 시 한 곳만 수정
@@ -939,16 +964,29 @@ export const ROLE_ENDPOINTS = {
 | POST | `/users/{id}/invalidate-tokens` | 강제 로그아웃 (토큰 무효화) | — | `void` (204) |
 | PATCH | `/users/{id}/roles` | 사용자 역할 변경 | `UpdateUserRolesRequest` | `UpdateUserRolesResponse` |
 | GET | `/roles` | 역할 목록 조회 | `GetRolesRequest` (query) | `GetRolesResponse` |
+| GET | `/super/dashboard` | 슈퍼 관리자 대시보드 데이터 | — | `SuperDashboardResponse` |
 
 ---
 
 ## 6. UI / 스타일링 전략
 
-### 6.1 컴포넌트 라이브러리
+### 6.1 컴포넌트 라이브러리 및 UI 전략
 
-- **Ant Design 6.3.3**: 주요 UI 컴포넌트 (Form, Input, Button, Card, Alert, Menu, Badge, Dropdown, Popover, Tooltip, Breadcrumb 등)
+- **Ant Design 6.3.3**: 인터랙션 중심 UI (테이블, 폼, 모달, 알림, 메뉴, Dropdown, Popover 등)
 - **@ant-design/icons 6.1.0**: 아이콘 (UserOutlined, LockOutlined, MenuFoldOutlined, BellOutlined 등)
-- **Recharts 3.8.0**: 차트 컴포넌트 (대시보드 확장용)
+- **Recharts 3.8.0**: 차트 컴포넌트 (AreaChart — 월별 트렌드)
+
+**UI 컴포넌트 선택 기준:**
+
+| 영역 | 접근 방식 | 이유 |
+|------|-----------|------|
+| 대시보드 카드/지표 | 커스텀 div + CSS Modules | 디자인 자유도 (아이콘 배치, 색상 틴팅, 카드 구조), 번들 최적화 |
+| 차트 툴팁 | 커스텀 ReactNode | Recharts 기본 툴팁 스타일 제한, 커스텀 디자인 필요 |
+| 테이블 | Ant Design Table | 정렬, 고정 컨럼, 스크롤, 페이지네이션 등 복잡 인터랙션 |
+| 폼/모달/알림 | Ant Design 컴포넌트 | CRUD 화면 생산성 |
+| 상태 배지 | 커스텀 span + CSS | 경량화, Ant Design Tag 대체 |
+
+> **원칙**: "표현 중심" 컴포넌트(대시보드 카드, 차트) → 커스텀, "인터랙션 중심" 컴포넌트(테이블, 폼) → Ant Design
 
 ### 6.2 스타일링 방식
 
@@ -982,11 +1020,12 @@ import styles from './login-form.module.css';
 
 ### 6.3 반응형 디자인
 
-- **주요 브레이크포인트**: `768px` (모바일/데스크톱 분기, 600px 제거)
-- **접근 방식**: 데스크톱 우선, `@media (max-width: 768px)`으로 모바일 조정
+- **브레이크포인트**: `960px` (2열→1열 레이아웃), `768px` (모바일 분기), `576px` (소형 모바일), `400px` (싱글 컬럼)
+- **접근 방식**: 데스크톱 우선, `@media (max-width)`으로 모바일 조정
 - 로그인 페이지에 `100dvh` 사용으로 모바일 뷰포트 대응
 - 모바일 사이드바: 오버레이 + 슬라이드 방식, 라우트 변경 시 자동 닫힘
 - 모바일 헤더: 테넌트 뱃지 숨김, 프로필 이름 숨김
+- 대시보드: 차트 높이 동적 조절 (360/300/240px), 테이블 모바일 핵심 6개 컬럼만 표시
 
 ### 6.4 디자인 토큰 (CSS Custom Properties)
 
@@ -1038,17 +1077,15 @@ import styles from './login-form.module.css';
 
 ```typescript
 // vite.config.ts
-import path from 'path';
-
 export default defineConfig({
   plugins: [react()],
   resolve: {
     alias: {
-      '@app': path.resolve(__dirname, 'src/app'),
-      '@shared': path.resolve(__dirname, 'src/shared'),
-      '@features': path.resolve(__dirname, 'src/features'),
-      '@pages': path.resolve(__dirname, 'src/pages'),
-      '@widgets': path.resolve(__dirname, 'src/widgets'),
+      '@app': fileURLToPath(new URL('./src/app', import.meta.url)),
+      '@shared': fileURLToPath(new URL('./src/shared', import.meta.url)),
+      '@features': fileURLToPath(new URL('./src/features', import.meta.url)),
+      '@pages': fileURLToPath(new URL('./src/pages', import.meta.url)),
+      '@widgets': fileURLToPath(new URL('./src/widgets', import.meta.url)),
     },
   },
   server: {
@@ -1056,12 +1093,14 @@ export default defineConfig({
     open: true,     // 브라우저 자동 열기
   },
   build: {
-    outDir: 'dist', // 빌드 출력 디렉토리
+    outDir: 'dist',                // 빌드 출력 디렉토리
+    chunkSizeWarningLimit: 1000,   // 청크 크기 경고 한도 (1000KB)
   },
 });
 ```
 
 - **Path Alias**: 5개 레이어에 대한 alias가 설정되어 깊은 상대 경로 대신 `@shared/api/axios` 같은 표현 사용
+- **코드 스플리팅**: React.lazy + Suspense로 라우트별 동적 import 적용, 빌드 시 페이지별 독립 청크 생성
 
 ### 7.2 TypeScript 설정
 
@@ -1288,8 +1327,8 @@ export default function UserPage() {
 ### Step 6: 라우트 등록
 
 ```tsx
-// src/app/App.tsx — MainLayout 내부 Route에 추가
-import UserPage from '@pages/user/user-page';
+// src/app/App.tsx — React.lazy로 동적 import 후 MainLayout 내부 Route에 추가
+const UserPage = lazy(() => import('@pages/user/user-page'));
 
 <Route element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
   <Route path="/dashboard" element={<DashboardPage />} />
@@ -1298,7 +1337,7 @@ import UserPage from '@pages/user/user-page';
 </Route>
 ```
 
-> Layout Route 패턴을 사용하므로 `ProtectedRoute`와 `MainLayout`으로 감싸진 부모 Route 안에 자식 Route를 추가합니다.
+> Layout Route 패턴을 사용하므로 `ProtectedRoute`와 `MainLayout`으로 감싸진 부모 Route 안에 자식 Route를 추가합니다. 모든 페이지는 `React.lazy()`로 동적 import하여 코드 스플리팅을 적용합니다.
 
 ---
 
@@ -1427,3 +1466,110 @@ interface GetRolesResponse {
 ```
 
 > **설계 의도**: Role은 사용자 수정 시 역할 배정에 사용되며, 향후 역할 CRUD/권한 관리 페이지 확장 시 이 슬라이스에 기능을 추가합니다. FSD 원칙에 따라 `features/user/`와 `features/role/`은 서로 직접 참조하지 않으며, `pages/` 레이어에서 조합합니다.
+
+### 11.3 슈퍼 관리자 대시보드 Feature (`features/super-dashboard/`)
+
+슈퍼 관리자 전용 대시보드로, 전체 시스템 현황(개요, 오늘, 월별 트렌드, 보안, 테넌트별 통계)을 시각화합니다.
+
+**Feature Slice 구조:**
+
+```
+features/super-dashboard/
+├─ index.ts                                    # Public API (UI 5개, useSuperDashboard, 타입)
+├─ api/
+│  ├─ super-dashboard.endpoint.ts              # SUPER_DASHBOARD_ENDPOINTS = { DASHBOARD: '/super/dashboard' }
+│  └─ get-super-dashboard.api.ts               # GET /super/dashboard
+├─ model/
+│  └─ use-super-dashboard.ts                   # useQuery — 대시보드 데이터 조회 (queryKey: ['super-dashboard'])
+├─ types/
+│  └─ super-dashboard.type.ts                  # SuperDashboardResponse 및 하위 타입
+└─ ui/                                         # 대시보드 UI 컴포넌트 (커스텀 div + CSS Modules)
+   ├─ overview-cards/
+   │  ├─ overview-cards.tsx                    # 전체 현황 8개 지표 카드 (테넌트, 사용자, 상담, 게시물 등)
+   │  └─ overview-cards.module.css             #   4열 그리드, 아이콘 틴팅 배경, 반응형 2/1열 전환
+   ├─ today-cards/
+   │  ├─ today-cards.tsx                       # 오늘 현황 4개 항목 (신규 가입, 상담, 게시물, 세션)
+   │  └─ today-cards.module.css                #   수직 리스트 레이아웃, 모바일 4→2→1열 그리드
+   ├─ monthly-trends-chart/
+   │  ├─ monthly-trends-chart.tsx              # Recharts AreaChart 기반 12개월 트렌드 (3개 시리즈)
+   │  └─ monthly-trends-chart.module.css       #   커스텀 툴팁, 커스텀 범례, 반응형 높이 (360/300/240px)
+   ├─ security-cards/
+   │  ├─ security-cards.tsx                    # 보안 현황 (누적 3개 + 최근 감지 2개 분리 레이아웃)
+   │  └─ security-cards.module.css             #   3열 그리드(누적) + 2열 그리드(최근), 경고 색상
+   └─ tenant-stats-table/
+      ├─ tenant-stats-table.tsx                # 테넌트별 14개 컬럼 상세 통계 (Ant Design Table)
+      └─ tenant-stats-table.module.css         #   커스텀 상태 뱃지, 숫자 하이라이트/경고, 모바일 6개 핵심 컬럼
+```
+
+**주요 타입:**
+
+```typescript
+// GET /super/dashboard 응답
+interface SuperDashboardResponse {
+  overview: SuperDashboardOverview;      // 전체 현황 8개 지표
+  today: SuperDashboardToday;            // 오늘 현황 4개 지표
+  monthlyTrends: SuperDashboardMonthlyTrends;  // 12개월 트렌드 3개 시리즈
+  security: SuperDashboardSecurity;      // 보안 현황 (차단 IP/HP/금지어, 최근 감지)
+  tenantStats: TenantStat[];             // 테넌트별 15개 필드 상세 통계
+}
+
+interface SuperDashboardOverview {
+  totalTenants: number;    activeTenants: number;
+  totalUsers: number;      activeUsers: number;
+  totalCounsels: number;   totalPosts: number;
+  totalRoles: number;      totalPermissions: number;
+}
+
+interface SuperDashboardToday {
+  newUsers: number;        newCounsels: number;
+  newPosts: number;        activeSessions: number;
+}
+
+interface SuperDashboardMonthlyTrends {
+  userRegistrations: MonthlyTrendItem[];
+  counselRegistrations: MonthlyTrendItem[];
+  tenantRegistrations: MonthlyTrendItem[];
+}
+
+interface SuperDashboardSecurity {
+  totalBlockedIps: number;   totalBlockedHps: number;   totalBlockedWords: number;
+  recentBlockedIps: number;  recentBlockedHps: number;
+}
+
+interface TenantStat {
+  tenantId: number;          tenantName: string;         isActive: number;
+  createdAt: string;         userCount: number;          activeUserCount: number;
+  counselCount: number;      todayCounselCount: number;  postCount: number;
+  roleCount: number;         websiteCount: number;       blockedIpCount: number;
+  blockedHpCount: number;    blockedWordCount: number;   activeSessionCount: number;
+}
+```
+
+**페이지 구성 (`pages/super-dashboard/super-dashboard-page.tsx`):**
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│  페이지 헤더 (타이틀 + 설명 | 새로고침 버튼 + 업데이트 시각)   │
+├──────────────────────────────────────┬───────────────────────┤
+│  전체 현황 [Overview]                │  오늘 현황 [Live 🟢]  │
+│  OverviewCards (8개 지표, 4열 그리드) │  TodayCards (4개 리스트)│
+│  1fr                                │  340px                 │
+├──────────────────────────────────────┴───────────────────────┤
+│  MonthlyTrendsChart (AreaChart, 12개월, 3개 시리즈)           │
+├──────────────────────────────────────────────────────────────┤
+│  보안 현황 [Security]                                        │
+│  SecurityCards (누적 3개 + 최근 감지 2개)                     │
+├──────────────────────────────────────────────────────────────┤
+│  테넌트별 상세 통계 [N개]                                     │
+│  TenantStatsTable (14개 컬럼, 가로 스크롤)                    │
+└──────────────────────────────────────────────────────────────┘
+```
+
+**UI/UX 설계 원칙:**
+- **커스텀 카드**: Ant Design Card/Statistic 대신 커스텀 div + CSS Modules 사용 (디자인 자유도, 번들 최적화)
+- **Ant Design Table 유지**: 테넌트 상세 통계는 정렬/고정 컬럼/스크롤 등 인터랙션이 필요하므로 AntD Table 사용
+- **커스텀 차트 툴팁**: Recharts 기본 툴팁 대신 CSS Modules 기반 커스텀 디자인
+- **섹션 헤더 배지**: Overview, Live (펄스 애니메이션), Security, 테넌트 수
+- **반응형**: 960px에서 2열→1열 전환, 768px 모바일 최적화, 400px 싱글 컬럼
+
+> **설계 의도**: 슈퍼 관리자 대시보드는 읽기 전용 데이터 시각화 페이지로, "표현 중심" 컴포넌트(카드, 차트)는 커스텀으로, "인터랙션 중심" 컴포넌트(테이블)는 Ant Design으로 구현하여 디자인 자유도와 개발 효율성을 균형있게 유지합니다.

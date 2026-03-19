@@ -233,15 +233,41 @@ flowdesk-admin-frontend/
    │  │        ├─ user-password-form.tsx  # 비밀번호 초기화 폼
    │  │        └─ user-password-form.module.css
    │  │
-   │  └─ role/                   # 역할 관리 도메인
-   │     ├─ index.ts             # Public API (useRoles, getRolesApi, 타입 노출)
+   │  ├─ role/                   # 역할 관리 도메인
+   │  │  ├─ index.ts             # Public API (useRoles, getRolesApi, 타입 노출)
+   │  │  ├─ api/
+   │  │  │  ├─ role.endpoint.ts  # API 엔드포인트 상수 (ROLE_ENDPOINTS)
+   │  │  │  └─ get-roles.api.ts  # GET /roles (역할 목록 조회)
+   │  │  ├─ model/
+   │  │  │  └─ use-roles.ts      # useRoles() 역할 목록 조회 훅 (useQuery)
+   │  │  └─ types/
+   │  │     └─ role.type.ts      # Role, GetRolesRequest/Response 타입
+   │  │
+   │  └─ super-dashboard/        # 슈퍼 관리자 대시보드 도메인
+   │     ├─ index.ts             # Public API (UI 컴포넌트 5개, useSuperDashboard 훅, 타입 노출)
    │     ├─ api/
-   │     │  ├─ role.endpoint.ts  # API 엔드포인트 상수 (ROLE_ENDPOINTS)
-   │     │  └─ get-roles.api.ts  # GET /roles (역할 목록 조회)
+   │     │  ├─ super-dashboard.endpoint.ts  # API 엔드포인트 상수 (SUPER_DASHBOARD_ENDPOINTS)
+   │     │  └─ get-super-dashboard.api.ts   # GET /super/dashboard
    │     ├─ model/
-   │     │  └─ use-roles.ts      # useRoles() 역할 목록 조회 훅 (useQuery)
-   │     └─ types/
-   │        └─ role.type.ts      # Role, GetRolesRequest/Response 타입
+   │     │  └─ use-super-dashboard.ts       # useSuperDashboard() 대시보드 데이터 조회 훅 (useQuery)
+   │     ├─ types/
+   │     │  └─ super-dashboard.type.ts      # SuperDashboardResponse, Overview, Today, MonthlyTrends, Security, TenantStat 타입
+   │     └─ ui/                  # 대시보드 UI 컴포넌트 (컴포넌트별 폴더 분리)
+   │        ├─ overview-cards/
+   │        │  ├─ overview-cards.tsx          # 전체 현황 8개 지표 카드
+   │        │  └─ overview-cards.module.css
+   │        ├─ today-cards/
+   │        │  ├─ today-cards.tsx             # 오늘 현황 4개 항목 리스트
+   │        │  └─ today-cards.module.css
+   │        ├─ monthly-trends-chart/
+   │        │  ├─ monthly-trends-chart.tsx    # Recharts AreaChart 12개월 트렌드
+   │        │  └─ monthly-trends-chart.module.css
+   │        ├─ security-cards/
+   │        │  ├─ security-cards.tsx          # 보안 현황 (누적 3개 + 최근 감지 2개)
+   │        │  └─ security-cards.module.css
+   │        └─ tenant-stats-table/
+   │           ├─ tenant-stats-table.tsx      # 테넌트별 14개 컬럼 상세 통계 테이블
+   │           └─ tenant-stats-table.module.css
    │
    └─ pages/                     # 라우트 단위 페이지 컴포넌트
       ├─ login/
@@ -256,8 +282,11 @@ flowdesk-admin-frontend/
       ├─ user/
       │  ├─ user-page.tsx        # 사용자 관리 페이지 (검색/필터 + 테이블 + CRUD 모달)
       │  └─ user-page.module.css
-      └─ dashboard/
-         └─ dashboard-page.tsx   # 대시보드 페이지 (보호된 라우트)
+      ├─ dashboard/
+      │  └─ dashboard-page.tsx   # 대시보드 페이지 (보호된 라우트)
+      └─ super-dashboard/
+         ├─ super-dashboard-page.tsx       # 슈퍼 관리자 대시보드 (전체 시스템 현황)
+         └─ super-dashboard-page.module.css
 ```
 
 ## 폴더/파일 구조 규칙 및 사용 가이드
@@ -364,8 +393,7 @@ features/{도메인명}/
 | `/signup` | SignupPage | — | 불필요 | 회원가입 페이지 (로그인 상태 시 `/dashboard`로 리다이렉트) |
 | `/dashboard` | DashboardPage | MainLayout | **필요** | 대시보드 (ProtectedRoute + MainLayout으로 보호) |
 | `/mypage` | MypagePage | MainLayout | **필요** | 마이페이지 (프로필 정보, 역할/권한, 보안 설정) |
-| `/users` | UserPage | MainLayout | **필요** | 사용자 관리 (CRUD, 상태 변경, 비밀번호 초기화, 역할 설정) |
-
+| `/users` | UserPage | MainLayout | **필요** | 사용자 관리 (CRUD, 상태 변경, 비밀번호 초기화, 역할 설정) || `/super/dashboard` | `SuperDashboardPage` | `MainLayout` | **필요** | 슈퍼 관리자 대시보드 (전체 시스템 현황, 보안, 테넌트 통계) |
 ## 구현 현황
 
 | 기능 | 상태 | 설명 |
@@ -388,12 +416,14 @@ features/{도메인명}/
 | 전체 기기 로그아웃 | ✅ 완료 | POST /auth/logout-all API 연동 + 로컬 상태 정리 |
 | 사용자 관리 | ✅ 완료 | 사용자 CRUD, 검색/필터, 상태 변경, 비밀번호 초기화, 강제 로그아웃, 역할 배정 |
 | 역할 관리 (기본) | ✅ 완료 | 역할 목록 조회, 사용자 수정 시 역할 다중 선택 (features/role 슬라이스 분리) |
+| 슈퍼 관리자 대시보드 | ✅ 완료 | 전체 현황(8지표), 오늘 현황(4지표), 월별 트렌드 차트, 보안 현황, 테넌트별 상세 통계 |
+| 라우트 코드 스플리팅 | ✅ 완료 | React.lazy + Suspense 기반 라우트별 동적 import (번들 최적화) |
 | CSS 토큰 체계 | ✅ 완료 | CSS Custom Properties 29개 (:root), focus-visible 접근성 |
 | 에러 처리 | ✅ 완료 | AxiosError 타입 래핑 + 에러 코드 매핑 + 한국어 메시지 |
 | 반응형 디자인 | ✅ 완료 | 모바일 대응 (768px 브레이크포인트) |
 | Path Alias | ✅ 완료 | @app, @shared, @features, @pages, @widgets |
 | API 상수 관리 | ✅ 완료 | 엔드포인트 경로 상수 파일 분리 |
-| 대시보드 | 🔧 스캐폴드 | 기본 플레이스홀더 구현 |
+| 대시보드 | 🔧 스캐폴드 | 테넌트 대시보드 기본 플레이스홀더 구현 |
 
 ## 배포
 

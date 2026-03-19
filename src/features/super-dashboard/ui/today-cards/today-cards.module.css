@@ -1,0 +1,112 @@
+.list {
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid var(--color-border);
+  overflow: hidden;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  transition: background var(--transition-base);
+}
+
+.item:not(:last-child) {
+  border-bottom: 1px solid var(--color-border);
+}
+
+.item:hover {
+  background: var(--color-bg);
+}
+
+.itemLeft {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.itemIcon {
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+}
+
+.itemTitle {
+  font-size: 14px;
+  color: var(--color-text);
+  font-weight: 500;
+}
+
+.itemValue {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--color-text);
+  letter-spacing: -0.3px;
+}
+
+/* ── 반응형: 960 이하에서 그리드로 전환 ── */
+@media (max-width: 960px) {
+  .list {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0;
+  }
+
+  .item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 16px;
+  }
+
+  .item:not(:last-child) {
+    border-bottom: none;
+    border-right: 1px solid var(--color-border);
+  }
+}
+
+@media (max-width: 768px) {
+  .list {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .item:nth-child(2) {
+    border-right: none;
+  }
+
+  .item:nth-child(1),
+  .item:nth-child(2) {
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .itemValue {
+    font-size: 20px;
+  }
+}
+
+@media (max-width: 400px) {
+  .list {
+    grid-template-columns: 1fr;
+  }
+
+  .item {
+    flex-direction: row;
+    align-items: center;
+  }
+
+  .item:not(:last-child) {
+    border-right: none;
+    border-bottom: 1px solid var(--color-border);
+  }
+}
