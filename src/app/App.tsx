@@ -10,6 +10,7 @@ const SignupPage = lazy(() => import('@pages/signup/signup-page'));
 const DashboardPage = lazy(() => import('@pages/dashboard/dashboard-page'));
 const MypagePage = lazy(() => import('@pages/mypage/mypage-page'));
 const UserPage = lazy(() => import('@pages/user/user-page'));
+const TenantPage = lazy(() => import('@pages/tenant/tenant-page'));
 const SuperDashboardPage = lazy(() => import('@pages/super-dashboard/super-dashboard-page'));
 
 const queryClient = new QueryClient({
@@ -37,6 +38,7 @@ export default function App() {
               <Route path="/dashboard" element={<DashboardPage />} />
               <Route path="/mypage" element={<MypagePage />} />
               <Route path="/users" element={<UserPage />} />
+              <Route path="/tenants" element={<TenantPage />} />
               <Route path="/super/dashboard" element={<SuperDashboardPage />} />
             </Route>
 

@@ -47,6 +47,7 @@
   - [11.1 사용자 관리 Feature](#111-사용자-관리-feature-featuresuser)
   - [11.2 역할 관리 Feature](#112-역할-관리-feature-featuresrole)
   - [11.3 슈퍼 관리자 대시보드 Feature](#113-슈퍼-관리자-대시보드-feature-featuressuper-dashboard)
+  - [11.4 테넌트 관리 Feature](#114-테넌트-관리-feature-featurestenant)
 
 ---
 
@@ -152,6 +153,7 @@ const SignupPage = lazy(() => import('@pages/signup/signup-page'));
 const DashboardPage = lazy(() => import('@pages/dashboard/dashboard-page'));
 const MypagePage = lazy(() => import('@pages/mypage/mypage-page'));
 const UserPage = lazy(() => import('@pages/user/user-page'));
+const TenantPage = lazy(() => import('@pages/tenant/tenant-page'));
 const SuperDashboardPage = lazy(() => import('@pages/super-dashboard/super-dashboard-page'));
 
 <Suspense fallback={<Spin />}>
@@ -164,6 +166,7 @@ const SuperDashboardPage = lazy(() => import('@pages/super-dashboard/super-dashb
       <Route path="/dashboard" element={<DashboardPage />} />
       <Route path="/mypage" element={<MypagePage />} />
       <Route path="/users" element={<UserPage />} />
+      <Route path="/tenants" element={<TenantPage />} />
       <Route path="/super/dashboard" element={<SuperDashboardPage />} />
     </Route>
 
@@ -191,6 +194,7 @@ const SuperDashboardPage = lazy(() => import('@pages/super-dashboard/super-dashb
 | `/dashboard` | `DashboardPage` | `MainLayout` | `ProtectedRoute` | 토큰 없으면 `/login`으로 리다이렉트 |
 | `/mypage` | `MypagePage` | `MainLayout` | `ProtectedRoute` | 프로필 정보, 역할/권한, 보안 설정 |
 | `/users` | `UserPage` | `MainLayout` | `ProtectedRoute` | 사용자 관리 (CRUD, 상태 변경, 역할 설정) |
+| `/tenants` | `TenantPage` | `MainLayout` | `ProtectedRoute` | 테넌트 관리 (CRUD, 상태 변경, 삭제) |
 | `/super/dashboard` | `SuperDashboardPage` | `MainLayout` | `ProtectedRoute` | 슈퍼 관리자 대시보드 (전체 시스템 현황) |
 
 ### 2.4 메인 레이아웃 구조
@@ -768,6 +772,8 @@ const { control, handleSubmit, reset, setFocus, formState: { errors } } = useFor
 | `createUserSchema` | `create-user.schema.ts` | 7 | 사용자 ID/비밀번호 필수, 이메일 형식, 회사명 필수 |
 | `updateUserSchema` | `update-user.schema.ts` | 5 | 이름/회사명 필수, 이메일/전화번호 optional |
 | `resetUserPasswordSchema` | `reset-user-password.schema.ts` | 1 | 새 비밀번호 8자 이상 |
+| `createTenantSchema` | `create-tenant.schema.ts` | 3 | 테넌트명, 표시명, 도메인 필수 |
+| `updateTenantSchema` | `update-tenant.schema.ts` | 3 | 테넌트명, 표시명, 도메인 필수 |
 
 ---
 
@@ -938,6 +944,16 @@ export const ROLE_ENDPOINTS = {
 export const SUPER_DASHBOARD_ENDPOINTS = {
   DASHBOARD: '/super/dashboard',
 } as const;
+
+// src/features/tenant/api/tenant.endpoint.ts
+export const TENANT_ENDPOINTS = {
+  LIST: '/tenants',
+  CREATE: '/tenants',
+  DETAIL: (id: number) => `/tenants/${id}`,
+  UPDATE: (id: number) => `/tenants/${id}`,
+  DELETE: (id: number) => `/tenants/${id}`,
+  STATUS: (id: number) => `/tenants/${id}/status`,
+} as const;
 ```
 
 - 상수 파일을 분리하여 API 경로 변경 시 한 곳만 수정
@@ -965,6 +981,12 @@ export const SUPER_DASHBOARD_ENDPOINTS = {
 | PATCH | `/users/{id}/roles` | 사용자 역할 변경 | `UpdateUserRolesRequest` | `UpdateUserRolesResponse` |
 | GET | `/roles` | 역할 목록 조회 | `GetRolesRequest` (query) | `GetRolesResponse` |
 | GET | `/super/dashboard` | 슈퍼 관리자 대시보드 데이터 | — | `SuperDashboardResponse` |
+| GET | `/tenants` | 테넌트 목록 조회 | `GetTenantsRequest` (query) | `GetTenantsResponse` |
+| GET | `/tenants/{id}` | 테넌트 상세 조회 | — | `GetTenantResponse` |
+| POST | `/tenants` | 테넌트 생성 | `CreateTenantRequest` | `CreateTenantResponse` |
+| PATCH | `/tenants/{id}` | 테넌트 수정 | `UpdateTenantRequest` | `UpdateTenantResponse` |
+| DELETE | `/tenants/{id}` | 테넌트 삭제 (사용자 존재 시 400) | — | `void` (204) |
+| PATCH | `/tenants/{id}/status` | 테넌트 상태 변경 (활성/비활성) | `UpdateTenantStatusRequest` | `UpdateTenantStatusResponse` |
 
 ---
 
@@ -1573,3 +1595,111 @@ interface TenantStat {
 - **반응형**: 960px에서 2열→1열 전환, 768px 모바일 최적화, 400px 싱글 컬럼
 
 > **설계 의도**: 슈퍼 관리자 대시보드는 읽기 전용 데이터 시각화 페이지로, "표현 중심" 컴포넌트(카드, 차트)는 커스텀으로, "인터랙션 중심" 컴포넌트(테이블)는 Ant Design으로 구현하여 디자인 자유도와 개발 효율성을 균형있게 유지합니다.
+
+### 11.4 테넌트 관리 Feature (`features/tenant/`)
+
+테넌트 CRUD, 상태 변경(활성/비활성), 삭제 기능을 담당합니다. 사용자 관리(`features/user/`)와 동일한 패턴으로 구현되어 코드 일관성을 유지합니다.
+
+**Feature Slice 구조:**
+
+```
+features/tenant/
+├─ index.ts                              # Public API
+├─ api/
+│  ├─ tenant.endpoint.ts                 # TENANT_ENDPOINTS 상수
+│  ├─ get-tenants.api.ts                 # GET /tenants (페이지네이션, 검색, 필터, 정렬)
+│  ├─ get-tenant.api.ts                  # GET /tenants/{id} (상세 조회)
+│  ├─ create-tenant.api.ts               # POST /tenants
+│  ├─ update-tenant.api.ts               # PATCH /tenants/{id}
+│  ├─ delete-tenant.api.ts               # DELETE /tenants/{id}
+│  └─ update-tenant-status.api.ts        # PATCH /tenants/{id}/status
+├─ model/
+│  ├─ use-tenants.ts                     # useQuery — 목록 조회 (queryKey: ['tenants', params])
+│  ├─ use-tenant.ts                      # useQuery — 상세 조회 (queryKey: ['tenants', id])
+│  ├─ use-create-tenant.ts               # useMutation + invalidateQueries(['tenants'])
+│  ├─ use-update-tenant.ts               # useMutation + invalidateQueries(['tenants'])
+│  ├─ use-delete-tenant.ts               # useMutation + invalidateQueries(['tenants'])
+│  ├─ use-update-tenant-status.ts        # useMutation + invalidateQueries(['tenants'])
+│  ├─ create-tenant.schema.ts            # Zod 스키마 (tenantName, displayName, domain)
+│  └─ update-tenant.schema.ts            # Zod 스키마 (tenantName, displayName, domain)
+├─ types/
+│  └─ tenant.type.ts                     # Tenant, GetTenantsRequest/Response, CreateTenantRequest 등
+└─ ui/
+   ├─ tenant-table/                      # 테넌트 목록 테이블
+   │  ├─ tenant-table.tsx                # AntD Table + 정렬 + 페이지네이션 + Dropdown 액션 메뉴
+   │  └─ tenant-table.module.css         #   ├─ 액션: 정보 수정, 상태 변경, 삭제
+   ├─ tenant-create-form/                # 테넌트 생성 폼
+   │  ├─ tenant-create-form.tsx          # RHF + Zod + Controller 패턴 (3필드)
+   │  └─ tenant-create-form.module.css
+   └─ tenant-edit-form/                  # 테넌트 수정 폼
+      ├─ tenant-edit-form.tsx            # 2섹션 구조 (기본 정보 / 도메인)
+      └─ tenant-edit-form.module.css
+```
+
+**테넌트 관리 페이지 (`pages/tenant/tenant-page.tsx`):**
+- 페이지 헤더: 제목 + 총 테넌트 수 Badge + 검색/필터 툴바 + 생성 버튼
+- 테이블: 테넌트 ID, 테넌트명, 표시 이름, 도메인, 사용자 수, 상태(활성/비활성), 생성일, 수정일, Dropdown 액션 메뉴
+- 모달: 테넌트 생성, 테넌트 수정(기본정보/도메인 섹션 분리)
+- 확인 다이얼로그: 상태 변경(활성↔비활성), 삭제(사용자 존재 시 차단 안내)
+
+**주요 타입:**
+
+```typescript
+interface Tenant {
+  tenantId: number;
+  tenantName: string;
+  displayName: string;
+  domain: string;
+  isActive: number;
+  createdAt: string;
+  updatedAt: string;
+  userCount: number;
+}
+
+interface GetTenantsRequest {
+  page?: number;
+  limit?: number;
+  q?: string;                    // tenantName, displayName, domain 검색
+  isActive?: 0 | 1;
+  sort?: string;                 // tenantId, tenantName, displayName, createdAt, updatedAt
+  order?: 'ASC' | 'DESC';
+}
+
+interface GetTenantsResponse {
+  items: Tenant[];
+  pageInfo: { page: number; limit: number; totalItems: number; totalPages: number };
+}
+
+// 상세 조회 응답 (userCount 제외)
+type GetTenantResponse = Omit<Tenant, 'userCount'>;
+
+interface CreateTenantRequest {
+  tenantName: string;
+  displayName: string;
+  domain: string;
+  isActive?: number;
+}
+
+interface UpdateTenantRequest {
+  tenantName?: string;
+  displayName?: string;
+  domain?: string;
+  isActive?: number;
+}
+
+interface UpdateTenantStatusRequest {
+  isActive: 0 | 1;
+}
+```
+
+**사용자 관리와의 패턴 차이점:**
+
+| 항목 | 사용자 관리 (`/users`) | 테넌트 관리 (`/tenants`) |
+|------|----------------------|------------------------|
+| 페이지네이션 필드명 | `currentPage` / `pageSize` | `page` / `limit` |
+| 정렬 파라미터 | `sortField` / `sortOrder` (`asc`/`desc`) | `sort` / `order` (`ASC`/`DESC`) |
+| 삭제 기능 | 없음 (비활성화로 대체) | 있음 (사용자 미존재 시에만 가능) |
+| 역할 연동 | 수정 시 역할 다중 선택 (`@features/role`) | 없음 |
+| rowKey | `userSeq` | `tenantId` |
+
+> **설계 의도**: 테넌트 관리는 사용자 관리와 동일한 FSD 패턴(types → api → model → ui → index.ts → page)을 따르면서도, API 스펙의 차이(페이지네이션 필드명, 정렬 파라미터 대소문자, DELETE 엔드포인트)를 정확히 반영합니다. 삭제 기능은 서버 측에서 사용자가 존재하는 테넌트의 삭제를 거부(400)하므로, UI에서 확인 다이얼로그에 이 제약을 안내합니다.

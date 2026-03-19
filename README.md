@@ -233,6 +233,38 @@ flowdesk-admin-frontend/
    │  │        ├─ user-password-form.tsx  # 비밀번호 초기화 폼
    │  │        └─ user-password-form.module.css
    │  │
+   │  ├─ tenant/                  # 테넌트 관리 도메인
+   │  │  ├─ index.ts             # Public API (UI 컴포넌트, 훅, 스키마, 타입 노출)
+   │  │  ├─ api/                 # API 호출 함수
+   │  │  │  ├─ tenant.endpoint.ts  # API 엔드포인트 상수 (TENANT_ENDPOINTS)
+   │  │  │  ├─ get-tenants.api.ts  # GET /tenants (목록 조회)
+   │  │  │  ├─ get-tenant.api.ts   # GET /tenants/{id} (상세 조회)
+   │  │  │  ├─ create-tenant.api.ts  # POST /tenants (생성)
+   │  │  │  ├─ update-tenant.api.ts  # PATCH /tenants/{id} (수정)
+   │  │  │  ├─ delete-tenant.api.ts  # DELETE /tenants/{id} (삭제)
+   │  │  │  └─ update-tenant-status.api.ts  # PATCH /tenants/{id}/status (상태 변경)
+   │  │  ├─ model/               # 커스텀 훅, Zod 스키마
+   │  │  │  ├─ use-tenants.ts      # useTenants() 테넌트 목록 조회 훅 (useQuery)
+   │  │  │  ├─ use-tenant.ts       # useTenant() 테넌트 상세 조회 훅 (useQuery)
+   │  │  │  ├─ use-create-tenant.ts  # useCreateTenant() 뮤테이션 훅
+   │  │  │  ├─ use-update-tenant.ts  # useUpdateTenant() 뮤테이션 훅
+   │  │  │  ├─ use-delete-tenant.ts  # useDeleteTenant() 뮤테이션 훅
+   │  │  │  ├─ use-update-tenant-status.ts  # useUpdateTenantStatus() 뮤테이션 훅
+   │  │  │  ├─ create-tenant.schema.ts  # Zod 테넌트 생성 스키마
+   │  │  │  └─ update-tenant.schema.ts  # Zod 테넌트 수정 스키마
+   │  │  ├─ types/
+   │  │  │  └─ tenant.type.ts     # Tenant, GetTenantsRequest/Response, CreateTenantRequest 등 타입
+   │  │  └─ ui/                  # 도메인 UI 컴포넌트
+   │  │     ├─ tenant-table/
+   │  │     │  ├─ tenant-table.tsx  # 테넌트 목록 테이블 (정렬, 페이지네이션, Dropdown 액션 메뉴)
+   │  │     │  └─ tenant-table.module.css
+   │  │     ├─ tenant-create-form/
+   │  │     │  ├─ tenant-create-form.tsx  # 테넌트 생성 폼
+   │  │     │  └─ tenant-create-form.module.css
+   │  │     └─ tenant-edit-form/
+   │  │        ├─ tenant-edit-form.tsx  # 테넌트 수정 폼 (기본정보/도메인 섹션 분리)
+   │  │        └─ tenant-edit-form.module.css
+   │  │
    │  ├─ role/                   # 역할 관리 도메인
    │  │  ├─ index.ts             # Public API (useRoles, getRolesApi, 타입 노출)
    │  │  ├─ api/
@@ -282,6 +314,9 @@ flowdesk-admin-frontend/
       ├─ user/
       │  ├─ user-page.tsx        # 사용자 관리 페이지 (검색/필터 + 테이블 + CRUD 모달)
       │  └─ user-page.module.css
+      ├─ tenant/
+      │  ├─ tenant-page.tsx      # 테넌트 관리 페이지 (검색/필터 + 테이블 + CRUD 모달 + 삭제)
+      │  └─ tenant-page.module.css
       ├─ dashboard/
       │  └─ dashboard-page.tsx   # 대시보드 페이지 (보호된 라우트)
       └─ super-dashboard/
@@ -393,7 +428,9 @@ features/{도메인명}/
 | `/signup` | SignupPage | — | 불필요 | 회원가입 페이지 (로그인 상태 시 `/dashboard`로 리다이렉트) |
 | `/dashboard` | DashboardPage | MainLayout | **필요** | 대시보드 (ProtectedRoute + MainLayout으로 보호) |
 | `/mypage` | MypagePage | MainLayout | **필요** | 마이페이지 (프로필 정보, 역할/권한, 보안 설정) |
-| `/users` | UserPage | MainLayout | **필요** | 사용자 관리 (CRUD, 상태 변경, 비밀번호 초기화, 역할 설정) || `/super/dashboard` | `SuperDashboardPage` | `MainLayout` | **필요** | 슈퍼 관리자 대시보드 (전체 시스템 현황, 보안, 테넌트 통계) |
+| `/users` | UserPage | MainLayout | **필요** | 사용자 관리 (CRUD, 상태 변경, 비밀번호 초기화, 역할 설정) |
+| `/tenants` | TenantPage | MainLayout | **필요** | 테넌트 관리 (CRUD, 상태 변경, 삭제) |
+| `/super/dashboard` | `SuperDashboardPage` | `MainLayout` | **필요** | 슈퍼 관리자 대시보드 (전체 시스템 현황, 보안, 테넌트 통계) |
 ## 구현 현황
 
 | 기능 | 상태 | 설명 |
@@ -415,6 +452,7 @@ features/{도메인명}/
 | 프로필 수정 | ✅ 완료 | 모달 폼 (회사명, 이름, 이메일, 전화번호, 휴대폰), Zustand + localStorage 즉시 동기화 |
 | 전체 기기 로그아웃 | ✅ 완료 | POST /auth/logout-all API 연동 + 로컬 상태 정리 |
 | 사용자 관리 | ✅ 완료 | 사용자 CRUD, 검색/필터, 상태 변경, 비밀번호 초기화, 강제 로그아웃, 역할 배정 |
+| 테넌트 관리 | ✅ 완료 | 테넌트 CRUD, 검색/필터, 상태 변경(활성/비활성), 삭제(사용자 존재 시 차단), 도메인 관리 |
 | 역할 관리 (기본) | ✅ 완료 | 역할 목록 조회, 사용자 수정 시 역할 다중 선택 (features/role 슬라이스 분리) |
 | 슈퍼 관리자 대시보드 | ✅ 완료 | 전체 현황(8지표), 오늘 현황(4지표), 월별 트렌드 차트, 보안 현황, 테넌트별 상세 통계 |
 | 라우트 코드 스플리팅 | ✅ 완료 | React.lazy + Suspense 기반 라우트별 동적 import (번들 최적화) |
