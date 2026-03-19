@@ -3,6 +3,7 @@ import { Button, Modal, Input, Select, message } from 'antd';
 import { PlusOutlined, ExclamationCircleOutlined, SearchOutlined } from '@ant-design/icons';
 import {
   UserTable,
+  UserDetail,
   UserCreateForm,
   UserEditForm,
   UserPasswordForm,
@@ -20,11 +21,13 @@ const { confirm } = Modal;
 export default function UserPage() {
   const [params, setParams] = useState<GetUsersRequest>({ page: 1, limit: 20 });
   const [createModalOpen, setCreateModalOpen] = useState(false);
+  const [detailTarget, setDetailTarget] = useState<User | null>(null);
   const [editTarget, setEditTarget] = useState<User | null>(null);
   const [passwordTarget, setPasswordTarget] = useState<User | null>(null);
 
   const { data, isLoading } = useUsers(params);
   const { data: rolesData } = useRoles({ isActive: 1, limit: 100 });
+  const { data: detailData, isLoading: detailLoading } = useUser(detailTarget?.userSeq ?? 0);
   const { data: editUserDetail } = useUser(editTarget?.userSeq ?? 0);
   const updateStatus = useUpdateUserStatus();
   const invalidateTokens = useInvalidateUserTokens();
@@ -128,12 +131,25 @@ export default function UserPage() {
           loading={isLoading}
           params={params}
           onParamsChange={setParams}
+          onDetail={setDetailTarget}
           onEdit={setEditTarget}
           onToggleStatus={handleToggleStatus}
           onResetPassword={setPasswordTarget}
           onInvalidateTokens={handleInvalidateTokens}
         />
       </div>
+
+      {/* 사용자 상세 보기 모달 */}
+      <Modal
+        title={detailTarget ? `${detailTarget.userName}(${detailTarget.userId}) 상세` : '사용자 상세'}
+        open={!!detailTarget}
+        onCancel={() => setDetailTarget(null)}
+        footer={null}
+        destroyOnClose
+        width={600}
+      >
+        <UserDetail data={detailData} loading={detailLoading} />
+      </Modal>
 
       {/* 사용자 생성 모달 */}
       <Modal

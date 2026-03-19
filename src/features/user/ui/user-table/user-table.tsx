@@ -1,5 +1,6 @@
 import { Table, Badge, Button, Dropdown, Tooltip } from 'antd';
 import {
+  EyeOutlined,
   EditOutlined,
   PoweroffOutlined,
   KeyOutlined,
@@ -16,6 +17,7 @@ interface UserTableProps {
   loading: boolean;
   params: GetUsersRequest;
   onParamsChange: (params: GetUsersRequest) => void;
+  onDetail: (user: User) => void;
   onEdit: (user: User) => void;
   onToggleStatus: (user: User) => void;
   onResetPassword: (user: User) => void;
@@ -27,12 +29,19 @@ export default function UserTable({
   loading,
   params,
   onParamsChange,
+  onDetail,
   onEdit,
   onToggleStatus,
   onResetPassword,
   onInvalidateTokens,
 }: UserTableProps) {
   const getActionMenuItems = (record: User): MenuProps['items'] => [
+    {
+      key: 'detail',
+      icon: <EyeOutlined />,
+      label: '상세 보기',
+      onClick: () => onDetail(record),
+    },
     {
       key: 'edit',
       icon: <EditOutlined />,

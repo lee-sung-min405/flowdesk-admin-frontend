@@ -1,4 +1,5 @@
 export { default as UserTable } from './ui/user-table/user-table.tsx';
+export { default as UserDetail } from './ui/user-detail/user-detail.tsx';
 export { default as UserCreateForm } from './ui/user-create-form/user-create-form.tsx';
 export { default as UserEditForm } from './ui/user-edit-form/user-edit-form.tsx';
 export { default as UserPasswordForm } from './ui/user-password-form/user-password-form.tsx';
