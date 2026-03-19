@@ -1,0 +1,288 @@
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 0;
+}
+
+/* ── Controls ── */
+.tableControls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 4px;
+}
+
+.expandBtn {
+  background: none;
+  border: none;
+  color: var(--color-primary);
+  font-size: 13px;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 4px;
+  transition: background 0.15s;
+}
+
+.expandBtn:hover {
+  background: var(--color-primary-bg, rgba(22, 119, 255, 0.06));
+}
+
+.controlDivider {
+  color: var(--color-border);
+  font-size: 12px;
+  user-select: none;
+}
+
+/* ── Table ── */
+.tableWrapper {
+  overflow-x: auto;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+}
+
+.matrix {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+/* ── Header ── */
+.matrix thead tr {
+  background: var(--color-bg-layout, #fafafa);
+}
+
+.pageHeader {
+  text-align: left;
+  padding: 12px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  border-bottom: 1px solid var(--color-border);
+  min-width: 320px;
+  width: 40%;
+}
+
+.actionHeader {
+  text-align: center;
+  padding: 12px 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  border-bottom: 1px solid var(--color-border);
+  min-width: 90px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Rows ── */
+.parentRow td {
+  background: #fff;
+}
+
+.childRow td {
+  background: var(--color-bg-layout, #fafafa);
+}
+
+.matrix tbody tr:not(:last-child) td {
+  border-bottom: 1px solid var(--color-border-light, #f0f0f0);
+}
+
+.matrix tbody tr:hover td {
+  background: var(--color-primary-bg, rgba(22, 119, 255, 0.04));
+}
+
+/* ── Page cell ── */
+.pageCell {
+  padding: 10px 16px;
+  vertical-align: middle;
+}
+
+.pageName {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.toggleBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--color-text-tertiary, #999);
+  cursor: pointer;
+  border-radius: 4px;
+  font-size: 11px;
+  flex-shrink: 0;
+  transition: color 0.15s, background 0.15s;
+}
+
+.toggleBtn:hover {
+  color: var(--color-primary);
+  background: var(--color-primary-bg, rgba(22, 119, 255, 0.06));
+}
+
+.togglePlaceholder {
+  display: inline-block;
+  width: 20px;
+  flex-shrink: 0;
+}
+
+.pageIcon {
+  display: inline-flex;
+  color: var(--color-text-tertiary, #999);
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.pageDisplayName {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pageCode {
+  font-size: 12px;
+  color: var(--color-text-quaternary, #bbb);
+  font-family: 'SF Mono', 'Menlo', 'Monaco', monospace;
+  margin-left: 4px;
+  flex-shrink: 0;
+}
+
+/* ── Action cell ── */
+.actionCell {
+  text-align: center;
+  vertical-align: middle;
+  padding: 10px 8px;
+}
+
+/* ── Add button (+ icon) ── */
+.addBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 1px dashed var(--color-border);
+  border-radius: 6px;
+  background: none;
+  color: var(--color-text-tertiary, #999);
+  cursor: pointer;
+  font-size: 12px;
+  transition: all 0.2s;
+}
+
+.addBtn:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  background: var(--color-primary-bg, rgba(22, 119, 255, 0.06));
+}
+
+/* ── Empty ── */
+.empty {
+  text-align: center;
+  padding: 48px 16px;
+  color: var(--color-text-tertiary, #999);
+  font-size: 14px;
+}
+
+/* ── Popover ── */
+.popoverContent {
+  display: flex;
+  flex-direction: column;
+  min-width: 240px;
+  max-width: 320px;
+}
+
+.popoverHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 2px 0;
+}
+
+.popoverLabel {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+}
+
+.popoverBadge {
+  flex-shrink: 0;
+}
+
+.popoverDivider {
+  margin: 8px 0;
+}
+
+.popoverActions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.popoverBtn {
+  font-size: 13px;
+  padding: 4px 10px;
+  height: auto;
+  border-radius: 6px;
+}
+
+.popoverBtn:not(:global(.ant-btn-dangerous)):hover {
+  background: var(--color-primary-bg, rgba(22, 119, 255, 0.06));
+}
+
+/* ── Active checkbox ── */
+.activeIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform 0.15s;
+}
+
+.activeIcon:hover {
+  transform: scale(1.15);
+}
+
+/* ── Inactive icon (red) ── */
+.inactiveIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background: #fff1f0;
+  border: 1px solid #ffccc7;
+  color: #ff4d4f;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.inactiveIcon:hover {
+  background: #ff4d4f;
+  color: #fff;
+  border-color: #ff4d4f;
+  transform: scale(1.1);
+}

@@ -2,6 +2,8 @@ export { default as AdminPermissionTable } from './ui/admin-permission-table/adm
 export { default as AdminPermissionDetail } from './ui/admin-permission-detail/admin-permission-detail.tsx';
 export { default as AdminPermissionCreateForm } from './ui/admin-permission-create-form/admin-permission-create-form.tsx';
 export { default as AdminPermissionEditForm } from './ui/admin-permission-edit-form/admin-permission-edit-form.tsx';
+export { default as AdminPermissionMatrix } from './ui/admin-permission-matrix/admin-permission-matrix.tsx';
+export type { MatrixAction } from './ui/admin-permission-matrix/admin-permission-matrix.tsx';
 
 export { useAdminPermissions } from './model/use-admin-permissions';
 export { useAdminPermission } from './model/use-admin-permission';

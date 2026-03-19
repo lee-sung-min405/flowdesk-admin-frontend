@@ -27,16 +27,18 @@ interface ActionOption {
 interface AdminPermissionCreateFormProps {
   pages: PageOption[];
   actions: ActionOption[];
+  initialPageId?: number;
+  initialActionId?: number;
   onSuccess: () => void;
   onCancel: () => void;
 }
 
-export default function AdminPermissionCreateForm({ pages, actions, onSuccess, onCancel }: AdminPermissionCreateFormProps) {
+export default function AdminPermissionCreateForm({ pages, actions, initialPageId, initialActionId, onSuccess, onCancel }: AdminPermissionCreateFormProps) {
   const { control, handleSubmit, formState: { errors } } = useForm<CreateAdminPermissionFormValues>({
     resolver: zodResolver(createAdminPermissionSchema),
     defaultValues: {
-      pageId: 0,
-      actionId: 0,
+      pageId: initialPageId ?? 0,
+      actionId: initialActionId ?? 0,
       displayName: '',
       description: '',
     },
@@ -86,6 +88,7 @@ export default function AdminPermissionCreateForm({ pages, actions, onSuccess, o
                 options={pageOptions}
                 showSearch
                 optionFilterProp="label"
+                disabled={!!initialPageId}
               />
             )}
           />
@@ -107,6 +110,7 @@ export default function AdminPermissionCreateForm({ pages, actions, onSuccess, o
                 options={actionOptions}
                 showSearch
                 optionFilterProp="label"
+                disabled={!!initialActionId}
               />
             )}
           />

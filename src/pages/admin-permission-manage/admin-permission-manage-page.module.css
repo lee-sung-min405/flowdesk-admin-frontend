@@ -54,19 +54,41 @@
   margin: 0;
 }
 
-.toolbar {
+.pageHeaderRight {
   display: flex;
   align-items: center;
   gap: 12px;
-  flex-wrap: wrap;
 }
 
-.searchInput {
-  width: 280px;
+.refreshBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--color-border);
+  background: #fff;
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  cursor: pointer;
+  transition: all var(--transition-base);
 }
 
-.filterSelect {
-  min-width: 110px;
+.refreshBtn:hover {
+  color: var(--color-primary);
+  border-color: var(--color-primary);
+  background: rgba(35, 61, 123, 0.04);
+}
+
+.refreshBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.updatedAt {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  white-space: nowrap;
 }
 
 .card {
@@ -74,4 +96,43 @@
   border-radius: 12px;
   border: 1px solid var(--color-border);
   padding: 24px;
+}
+
+.cardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.sectionTitle {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--color-text);
+  margin: 0;
+}
+
+.cardToolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.matrixSearchInput {
+  width: 220px;
+}
+
+.matrixFilterSelect {
+  min-width: 110px;
+}
+
+.tableSearchInput {
+  width: 220px;
+}
+
+.tableFilterSelect {
+  min-width: 120px;
 }

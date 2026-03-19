@@ -1,11 +1,12 @@
-import { useState } from 'react';
-import { Button, Modal, Input, Select, message } from 'antd';
-import { PlusOutlined, ExclamationCircleOutlined, SearchOutlined } from '@ant-design/icons';
+import { useState, useEffect, useMemo } from 'react';
+import { Input, Select, Modal, message } from 'antd';
+import { SearchOutlined, ReloadOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
 import {
+  AdminPermissionMatrix,
   AdminPermissionTable,
   AdminPermissionDetail,
-  AdminPermissionCreateForm,
   AdminPermissionEditForm,
+  AdminPermissionCreateForm,
   useAdminPermissions,
   useAdminPermission,
   useUpdateAdminPermissionStatus,
@@ -13,61 +14,108 @@ import {
 } from '@features/admin-permission';
 import type { AdminPermissionListItem, GetAdminPermissionsRequest } from '@features/admin-permission';
 import { useAdminPages } from '@features/admin-page';
-import { useAdminActions } from '@features/admin-action';
 import styles from './admin-permission-manage-page.module.css';
 
 const { confirm } = Modal;
 
-export default function AdminPermissionManagePage() {
-  const [params, setParams] = useState<GetAdminPermissionsRequest>({ page: 1, limit: 20 });
-  const [createModalOpen, setCreateModalOpen] = useState(false);
-  const [editTarget, setEditTarget] = useState<AdminPermissionListItem | null>(null);
-  const [detailTarget, setDetailTarget] = useState<AdminPermissionListItem | null>(null);
+interface CreateTarget {
+  pageId: number;
+  actionId: number;
+}
 
-  const { data, isLoading } = useAdminPermissions(params);
-  const { data: detailData, isLoading: detailLoading } = useAdminPermission(detailTarget?.permissionId ?? 0);
-  const { data: pagesData } = useAdminPages({ limit: 100, isActive: 1 });
-  const { data: actionsData } = useAdminActions({ limit: 100, isActive: 1 });
+export default function AdminPermissionManagePage() {
+  const [searchText, setSearchText] = useState('');
+  const [statusFilter, setStatusFilter] = useState<number | undefined>(undefined);
+  const [detailPermissionId, setDetailPermissionId] = useState<number | null>(null);
+  const [editTarget, setEditTarget] = useState<AdminPermissionListItem | null>(null);
+  const [createTarget, setCreateTarget] = useState<CreateTarget | null>(null);
+
+  // Table params & filters (server-side)
+  const [tableParams, setTableParams] = useState<GetAdminPermissionsRequest>({ page: 1, limit: 20 });
+  const [tableSearch, setTableSearch] = useState('');
+  const [tablePageId, setTablePageId] = useState<number | undefined>(undefined);
+  const [tableActionId, setTableActionId] = useState<number | undefined>(undefined);
+  const [tableStatus, setTableStatus] = useState<number | undefined>(undefined);
+
+  // Fetch pages (tree structure requires parentId, sortOrder)
+  const { data: pagesData, isLoading: pagesLoading, dataUpdatedAt: pagesUpdatedAt, refetch: refetchPages, isFetching: pagesFetching } = useAdminPages({ limit: 100, isActive: 1 });
+
+  // Fetch all permissions — auto-expand limit based on totalItems
+  const [permLimit, setPermLimit] = useState(100);
+  const { data: permData, isLoading: permLoading, dataUpdatedAt: permUpdatedAt, refetch: refetchPerms, isFetching: permFetching } = useAdminPermissions({
+    page: 1,
+    limit: permLimit,
+  });
+
+  useEffect(() => {
+    if (permData?.pageInfo && permData.pageInfo.totalItems > permLimit) {
+      setPermLimit(permData.pageInfo.totalItems);
+    }
+  }, [permData?.pageInfo?.totalItems, permLimit]);
+
+  // Table query (server-side pagination + filters)
+  const tableQueryParams = useMemo<GetAdminPermissionsRequest>(() => ({
+    ...tableParams,
+    q: tableSearch || undefined,
+    pageId: tablePageId,
+    actionId: tableActionId,
+    isActive: tableStatus,
+  }), [tableParams, tableSearch, tablePageId, tableActionId, tableStatus]);
+  const { data: tableData, isLoading: tableLoading } = useAdminPermissions(tableQueryParams);
+
+  // Detail query
+  const { data: detailData, isLoading: detailLoading } = useAdminPermission(detailPermissionId ?? 0);
+
   const updateStatus = useUpdateAdminPermissionStatus();
   const deletePermission = useDeleteAdminPermission();
 
-  const pageOptions = (pagesData?.items ?? []).map((p) => ({
-    pageId: p.pageId,
-    displayName: p.displayName,
-  }));
+  const pages = pagesData?.items ?? [];
+  const permissions = permData?.items ?? [];
 
-  const actionOptions = (actionsData?.items ?? []).map((a) => ({
-    actionId: a.actionId,
-    actionName: a.actionName,
-    displayName: a.displayName,
-  }));
+  const isLoading = pagesLoading || permLoading;
+  const isFetching = pagesFetching || permFetching;
 
-  const handleSearch = (value: string) => {
-    setParams((prev) => ({ ...prev, q: value || undefined, page: 1 }));
+  // Extract unique actions from permissions data (no separate actions API needed)
+  const uniqueActions = useMemo(() => {
+    const map = new Map<number, { actionId: number; actionName: string; displayName: string | null }>();
+    for (const perm of permissions) {
+      if (perm.action && !map.has(perm.action.actionId)) {
+        map.set(perm.action.actionId, {
+          actionId: perm.action.actionId,
+          actionName: perm.action.actionName,
+          displayName: perm.action.displayName,
+        });
+      }
+    }
+    return Array.from(map.values());
+  }, [permissions]);
+
+  // Client-side status filter (apply on permissions, not actions — so all columns stay visible)
+  const filteredPermissions = useMemo(() => {
+    if (statusFilter === undefined) return permissions;
+    return permissions.filter((p) => p.isActive === statusFilter);
+  }, [permissions, statusFilter]);
+
+  // Page/action options for forms
+  const pageOptions = pages.map((p) => ({ pageId: p.pageId, displayName: p.displayName }));
+  const actionOptions = uniqueActions.map((a) => ({ actionId: a.actionId, actionName: a.actionName, displayName: a.displayName }));
+
+  // Filter pages by search text
+  const filteredPages = searchText
+    ? pages.filter(
+        (p) =>
+          p.displayName.toLowerCase().includes(searchText.toLowerCase()) ||
+          p.pageName.toLowerCase().includes(searchText.toLowerCase()),
+      )
+    : pages;
+
+  const handleRefresh = () => {
+    refetchPages();
+    refetchPerms();
   };
 
-  const handleStatusFilterChange = (value: string) => {
-    setParams((prev) => ({
-      ...prev,
-      isActive: value === 'active' ? 1 : value === 'inactive' ? 0 : undefined,
-      page: 1,
-    }));
-  };
-
-  const handlePageFilterChange = (value: number | undefined) => {
-    setParams((prev) => ({
-      ...prev,
-      pageId: value,
-      page: 1,
-    }));
-  };
-
-  const handleActionFilterChange = (value: number | undefined) => {
-    setParams((prev) => ({
-      ...prev,
-      actionId: value,
-      page: 1,
-    }));
+  const handleOpenCreate = (pageId: number, actionId: number) => {
+    setCreateTarget({ pageId, actionId });
   };
 
   const handleToggleStatus = (permission: AdminPermissionListItem) => {
@@ -112,104 +160,183 @@ export default function AdminPermissionManagePage() {
     });
   };
 
+  const lastUpdated = Math.max(pagesUpdatedAt, permUpdatedAt);
+  const updatedLabel = lastUpdated
+    ? new Date(lastUpdated).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+    : '';
+
   return (
     <div className={styles.page}>
       <div className={styles.pageHeader}>
         <div className={styles.pageHeaderLeft}>
           <div className={styles.pageTitleRow}>
             <h1 className={styles.pageTitle}>권한 관리</h1>
-            {data?.pageInfo && (
-              <span className={styles.totalBadge}>{data.pageInfo.totalItems}</span>
+            {permData?.pageInfo && (
+              <span className={styles.totalBadge}>{permData.pageInfo.totalItems}</span>
             )}
           </div>
-          <p className={styles.pageDesc}>페이지와 액션의 조합으로 구성된 권한을 관리할 수 있습니다.</p>
+          <p className={styles.pageDesc}>
+            페이지와 액션의 조합으로 구성된 권한을 매트릭스 형태로 관리할 수 있습니다.
+          </p>
         </div>
-        <div className={styles.toolbar}>
-          <Input
-            className={styles.searchInput}
-            placeholder="권한 검색 (표시이름, 설명)..."
-            prefix={<SearchOutlined />}
-            allowClear
-            onPressEnter={(e) => handleSearch((e.target as HTMLInputElement).value)}
-            onChange={(e) => { if (!e.target.value) handleSearch(''); }}
-          />
-          <Select
-            className={styles.filterSelect}
-            placeholder="페이지"
-            allowClear
-            onChange={handlePageFilterChange}
-            options={(pagesData?.items ?? []).map((p) => ({ value: p.pageId, label: p.displayName }))}
-          />
-          <Select
-            className={styles.filterSelect}
-            placeholder="액션"
-            allowClear
-            onChange={handleActionFilterChange}
-            options={(actionsData?.items ?? []).map((a) => ({ value: a.actionId, label: a.displayName || a.actionName }))}
-          />
-          <Select
-            className={styles.filterSelect}
-            defaultValue="all"
-            onChange={handleStatusFilterChange}
-            options={[
-              { value: 'all', label: '전체 상태' },
-              { value: 'active', label: '활성' },
-              { value: 'inactive', label: '비활성' },
-            ]}
-          />
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={() => setCreateModalOpen(true)}
+        <div className={styles.pageHeaderRight}>
+          <button
+            className={styles.refreshBtn}
+            onClick={handleRefresh}
+            disabled={isFetching}
+            type="button"
           >
-            권한 생성
-          </Button>
+            <ReloadOutlined spin={isFetching} />
+            <span>새로고침</span>
+          </button>
+          {lastUpdated > 0 && (
+            <span className={styles.updatedAt}>
+              {updatedLabel} 기준
+            </span>
+          )}
         </div>
       </div>
 
       <div className={styles.card}>
-        <AdminPermissionTable
-          data={data}
+        <div className={styles.cardHeader}>
+          <h3 className={styles.sectionTitle}>권한 매트릭스</h3>
+          <div className={styles.cardToolbar}>
+            <Input
+              className={styles.matrixSearchInput}
+              placeholder="페이지 검색..."
+              prefix={<SearchOutlined />}
+              allowClear
+              value={searchText}
+              onChange={(e) => setSearchText(e.target.value)}
+            />
+            <Select
+              className={styles.matrixFilterSelect}
+              defaultValue="all"
+              onChange={(v) => setStatusFilter(v === 'active' ? 1 : v === 'inactive' ? 0 : undefined)}
+              options={[
+                { value: 'all', label: '전체 상태' },
+                { value: 'active', label: '활성' },
+                { value: 'inactive', label: '비활성' },
+              ]}
+            />
+          </div>
+        </div>
+        <AdminPermissionMatrix
+          pages={filteredPages}
+          actions={uniqueActions}
+          permissions={filteredPermissions}
           loading={isLoading}
-          params={params}
-          onParamsChange={setParams}
-          onDetail={setDetailTarget}
+          onCreate={handleOpenCreate}
+          onDetail={setDetailPermissionId}
           onEdit={setEditTarget}
           onToggleStatus={handleToggleStatus}
           onDelete={handleDelete}
         />
       </div>
 
+      <div className={styles.card}>
+        <div className={styles.cardHeader}>
+          <h3 className={styles.sectionTitle}>권한 목록</h3>
+          <div className={styles.cardToolbar}>
+          <Input
+            className={styles.tableSearchInput}
+            placeholder="권한 검색..."
+            prefix={<SearchOutlined />}
+            allowClear
+            value={tableSearch}
+            onChange={(e) => {
+              setTableSearch(e.target.value);
+              setTableParams((prev) => ({ ...prev, page: 1 }));
+            }}
+          />
+          <Select
+            className={styles.tableFilterSelect}
+            placeholder="페이지"
+            allowClear
+            value={tablePageId}
+            onChange={(v) => {
+              setTablePageId(v);
+              setTableParams((prev) => ({ ...prev, page: 1 }));
+            }}
+            options={pages.map((p) => ({ value: p.pageId, label: p.displayName }))}
+            showSearch
+            optionFilterProp="label"
+          />
+          <Select
+            className={styles.tableFilterSelect}
+            placeholder="액션"
+            allowClear
+            value={tableActionId}
+            onChange={(v) => {
+              setTableActionId(v);
+              setTableParams((prev) => ({ ...prev, page: 1 }));
+            }}
+            options={uniqueActions.map((a) => ({ value: a.actionId, label: a.displayName || a.actionName }))}
+            showSearch
+            optionFilterProp="label"
+          />
+          <Select
+            className={styles.tableFilterSelect}
+            placeholder="상태"
+            allowClear
+            value={tableStatus}
+            onChange={(v) => {
+              setTableStatus(v);
+              setTableParams((prev) => ({ ...prev, page: 1 }));
+            }}
+            options={[
+              { value: 1, label: '활성' },
+              { value: 0, label: '비활성' },
+            ]}
+          />
+          </div>
+        </div>
+        <AdminPermissionTable
+          data={tableData}
+          loading={tableLoading}
+          params={tableQueryParams}
+          onParamsChange={(p) => setTableParams({ page: p.page, limit: p.limit, sort: p.sort, order: p.order })}
+          onDetail={(perm) => setDetailPermissionId(perm.permissionId)}
+          onEdit={setEditTarget}
+          onToggleStatus={handleToggleStatus}
+          onDelete={handleDelete}
+        />
+      </div>
+
+      {/* 권한 생성 모달 */}
+      <Modal
+        title="권한 추가"
+        open={!!createTarget}
+        onCancel={() => setCreateTarget(null)}
+        footer={null}
+        destroyOnClose
+        width={560}
+      >
+        {createTarget && (
+          <AdminPermissionCreateForm
+            pages={pageOptions}
+            actions={actionOptions}
+            initialPageId={createTarget.pageId}
+            initialActionId={createTarget.actionId}
+            onSuccess={() => {
+              setCreateTarget(null);
+              message.success('권한이 생성되었습니다.');
+            }}
+            onCancel={() => setCreateTarget(null)}
+          />
+        )}
+      </Modal>
+
       {/* 권한 상세 보기 모달 */}
       <Modal
-        title={detailTarget?.displayName ? `${detailTarget.displayName} 상세` : '권한 상세'}
-        open={!!detailTarget}
-        onCancel={() => setDetailTarget(null)}
+        title="권한 상세"
+        open={detailPermissionId !== null}
+        onCancel={() => setDetailPermissionId(null)}
         footer={null}
         destroyOnClose
         width={600}
       >
         <AdminPermissionDetail data={detailData} loading={detailLoading} />
-      </Modal>
-
-      {/* 권한 생성 모달 */}
-      <Modal
-        title="권한 생성"
-        open={createModalOpen}
-        onCancel={() => setCreateModalOpen(false)}
-        footer={null}
-        destroyOnClose
-        width={560}
-      >
-        <AdminPermissionCreateForm
-          pages={pageOptions}
-          actions={actionOptions}
-          onSuccess={() => {
-            setCreateModalOpen(false);
-            message.success('권한이 생성되었습니다.');
-          }}
-          onCancel={() => setCreateModalOpen(false)}
-        />
       </Modal>
 
       {/* 권한 수정 모달 */}
