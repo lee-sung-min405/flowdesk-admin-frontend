@@ -431,6 +431,10 @@ features/{도메인명}/
 | `/users` | UserPage | MainLayout | **필요** | 사용자 관리 (CRUD, 상태 변경, 비밀번호 초기화, 역할 설정) |
 | `/tenants` | TenantPage | MainLayout | **필요** | 테넌트 관리 (CRUD, 상태 변경, 삭제) |
 | `/super/dashboard` | `SuperDashboardPage` | `MainLayout` | **필요** | 슈퍼 관리자 대시보드 (전체 시스템 현황, 보안, 테넌트 통계) |
+| `/permissions/admin/pages` | `AdminPageManagePage` | `MainLayout` | **필요** | RBAC 페이지 관리 (CRUD, 상세 보기, 계층 구조) |
+| `/permissions/admin/actions` | `AdminActionManagePage` | `MainLayout` | **필요** | RBAC 액션 관리 (CRUD, 상세 보기) |
+| `/permissions/admin/permissions` | `AdminPermissionManagePage` | `MainLayout` | **필요** | RBAC 권한 관리 (페이지+액션 조합, 크로스 피처) |
+
 ## 구현 현황
 
 | 기능 | 상태 | 설명 |
@@ -455,6 +459,9 @@ features/{도메인명}/
 | 테넌트 관리 | ✅ 완료 | 테넌트 CRUD, 검색/필터, 상태 변경(활성/비활성), 삭제(사용자 존재 시 차단), 도메인 관리 |
 | 역할 관리 (기본) | ✅ 완료 | 역할 목록 조회, 사용자 수정 시 역할 다중 선택 (features/role 슬라이스 분리) |
 | 슈퍼 관리자 대시보드 | ✅ 완료 | 전체 현황(8지표), 오늘 현황(4지표), 월별 트렌드 차트, 보안 현황, 테넌트별 상세 통계 |
+| RBAC 페이지 관리 | ✅ 완료 | 페이지 CRUD, 상세 보기(Descriptions + 하위 페이지 Table), 상태 변경, 삭제, 계층(부모-자식) 구조 |
+| RBAC 액션 관리 | ✅ 완료 | 액션 CRUD, 상세 보기(Descriptions), 상태 변경, 삭제 |
+| RBAC 권한 관리 | ✅ 완료 | 권한 CRUD, 상세 보기(페이지/액션 Tag+code), 상태 변경, 삭제, 크로스 피처 합성(admin-page + admin-action) |
 | 라우트 코드 스플리팅 | ✅ 완료 | React.lazy + Suspense 기반 라우트별 동적 import (번들 최적화) |
 | CSS 토큰 체계 | ✅ 완료 | CSS Custom Properties 29개 (:root), focus-visible 접근성 |
 | 에러 처리 | ✅ 완료 | AxiosError 타입 래핑 + 에러 코드 매핑 + 한국어 메시지 |

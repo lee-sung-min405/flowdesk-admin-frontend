@@ -1,0 +1,63 @@
+.statsBar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 16px;
+  font-size: 14px;
+  color: var(--color-text-secondary);
+}
+
+.statItem {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.statLabel {
+  color: var(--color-text-secondary);
+}
+
+.statValue {
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.statValueActive {
+  font-weight: 600;
+  color: #52c41a;
+}
+
+.statValueInactive {
+  font-weight: 600;
+  color: #ff4d4f;
+}
+
+.rootName {
+  font-weight: 600;
+}
+
+.childName {
+  padding-left: 8px;
+  color: var(--color-text-secondary);
+}
+
+.pathCode {
+  font-size: 12px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: var(--color-bg-elevated);
+  color: var(--color-text-secondary);
+}
+
+.noParent {
+  color: var(--color-text-tertiary);
+}
+
+.countActive {
+  font-weight: 600;
+  color: var(--color-primary);
+}
+
+.countZero {
+  color: var(--color-text-tertiary);
+}

@@ -12,6 +12,9 @@ const MypagePage = lazy(() => import('@pages/mypage/mypage-page'));
 const UserPage = lazy(() => import('@pages/user/user-page'));
 const TenantPage = lazy(() => import('@pages/tenant/tenant-page'));
 const SuperDashboardPage = lazy(() => import('@pages/super-dashboard/super-dashboard-page'));
+const AdminPageManagePage = lazy(() => import('@pages/admin-page-manage/admin-page-manage-page'));
+const AdminActionManagePage = lazy(() => import('@pages/admin-action-manage/admin-action-manage-page'));
+const AdminPermissionManagePage = lazy(() => import('@pages/admin-permission-manage/admin-permission-manage-page'));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -40,6 +43,9 @@ export default function App() {
               <Route path="/users" element={<UserPage />} />
               <Route path="/tenants" element={<TenantPage />} />
               <Route path="/super/dashboard" element={<SuperDashboardPage />} />
+              <Route path="/permissions/admin/pages" element={<AdminPageManagePage />} />
+              <Route path="/permissions/admin/actions" element={<AdminActionManagePage />} />
+              <Route path="/permissions/admin/permissions" element={<AdminPermissionManagePage />} />
             </Route>
 
             <Route path="/" element={<Navigate to="/login" />} />

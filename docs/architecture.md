@@ -48,6 +48,9 @@
   - [11.2 역할 관리 Feature](#112-역할-관리-feature-featuresrole)
   - [11.3 슈퍼 관리자 대시보드 Feature](#113-슈퍼-관리자-대시보드-feature-featuressuper-dashboard)
   - [11.4 테넌트 관리 Feature](#114-테넌트-관리-feature-featurestenant)
+  - [11.5 페이지 관리 Feature](#115-페이지-관리-feature-featuresadmin-page)
+  - [11.6 액션 관리 Feature](#116-액션-관리-feature-featuresadmin-action)
+  - [11.7 권한 관리 Feature](#117-권한-관리-feature-featuresadmin-permission)
 
 ---
 
@@ -155,6 +158,9 @@ const MypagePage = lazy(() => import('@pages/mypage/mypage-page'));
 const UserPage = lazy(() => import('@pages/user/user-page'));
 const TenantPage = lazy(() => import('@pages/tenant/tenant-page'));
 const SuperDashboardPage = lazy(() => import('@pages/super-dashboard/super-dashboard-page'));
+const AdminPageManagePage = lazy(() => import('@pages/admin-page-manage/admin-page-manage-page'));
+const AdminActionManagePage = lazy(() => import('@pages/admin-action-manage/admin-action-manage-page'));
+const AdminPermissionManagePage = lazy(() => import('@pages/admin-permission-manage/admin-permission-manage-page'));
 
 <Suspense fallback={<Spin />}>
   <Routes>
@@ -168,6 +174,9 @@ const SuperDashboardPage = lazy(() => import('@pages/super-dashboard/super-dashb
       <Route path="/users" element={<UserPage />} />
       <Route path="/tenants" element={<TenantPage />} />
       <Route path="/super/dashboard" element={<SuperDashboardPage />} />
+      <Route path="/permissions/admin/pages" element={<AdminPageManagePage />} />
+      <Route path="/permissions/admin/actions" element={<AdminActionManagePage />} />
+      <Route path="/permissions/admin/permissions" element={<AdminPermissionManagePage />} />
     </Route>
 
     <Route path="/" element={<Navigate to="/login" />} />
@@ -196,6 +205,9 @@ const SuperDashboardPage = lazy(() => import('@pages/super-dashboard/super-dashb
 | `/users` | `UserPage` | `MainLayout` | `ProtectedRoute` | 사용자 관리 (CRUD, 상태 변경, 역할 설정) |
 | `/tenants` | `TenantPage` | `MainLayout` | `ProtectedRoute` | 테넌트 관리 (CRUD, 상태 변경, 삭제) |
 | `/super/dashboard` | `SuperDashboardPage` | `MainLayout` | `ProtectedRoute` | 슈퍼 관리자 대시보드 (전체 시스템 현황) |
+| `/permissions/admin/pages` | `AdminPageManagePage` | `MainLayout` | `ProtectedRoute` | RBAC 페이지 관리 (CRUD, 상세 보기, 계층 구조) |
+| `/permissions/admin/actions` | `AdminActionManagePage` | `MainLayout` | `ProtectedRoute` | RBAC 액션 관리 (CRUD, 상세 보기) |
+| `/permissions/admin/permissions` | `AdminPermissionManagePage` | `MainLayout` | `ProtectedRoute` | RBAC 권한 관리 (페이지+액션 조합, 상세 보기) |
 
 ### 2.4 메인 레이아웃 구조
 
@@ -774,6 +786,12 @@ const { control, handleSubmit, reset, setFocus, formState: { errors } } = useFor
 | `resetUserPasswordSchema` | `reset-user-password.schema.ts` | 1 | 새 비밀번호 8자 이상 |
 | `createTenantSchema` | `create-tenant.schema.ts` | 3 | 테넌트명, 표시명, 도메인 필수 |
 | `updateTenantSchema` | `update-tenant.schema.ts` | 3 | 테넌트명, 표시명, 도메인 필수 |
+| `createAdminPageSchema` | `create-admin-page.schema.ts` | 6 | pageName, path, displayName 필수, description/parentId/sortOrder optional |
+| `updateAdminPageSchema` | `update-admin-page.schema.ts` | 6 | 동일 필드 |
+| `createAdminActionSchema` | `create-admin-action.schema.ts` | 2 | actionName 필수 (max 50), displayName optional |
+| `updateAdminActionSchema` | `update-admin-action.schema.ts` | 2 | 동일 필드 |
+| `createAdminPermissionSchema` | `create-admin-permission.schema.ts` | 4 | pageId min(1), actionId min(1), displayName/description optional |
+| `updateAdminPermissionSchema` | `update-admin-permission.schema.ts` | 4 | 동일 필드 |
 
 ---
 
@@ -954,6 +972,36 @@ export const TENANT_ENDPOINTS = {
   DELETE: (id: number) => `/tenants/${id}`,
   STATUS: (id: number) => `/tenants/${id}/status`,
 } as const;
+
+// src/features/admin-page/api/admin-page.endpoint.ts
+export const ADMIN_PAGE_ENDPOINTS = {
+  LIST: '/permissions/admin/pages',
+  CREATE: '/permissions/admin/pages',
+  DETAIL: (id: number) => `/permissions/admin/pages/${id}`,
+  UPDATE: (id: number) => `/permissions/admin/pages/${id}`,
+  STATUS: (id: number) => `/permissions/admin/pages/${id}/status`,
+  DELETE: (id: number) => `/permissions/admin/pages/${id}`,
+} as const;
+
+// src/features/admin-action/api/admin-action.endpoint.ts
+export const ADMIN_ACTION_ENDPOINTS = {
+  LIST: '/permissions/admin/actions',
+  CREATE: '/permissions/admin/actions',
+  DETAIL: (id: number) => `/permissions/admin/actions/${id}`,
+  UPDATE: (id: number) => `/permissions/admin/actions/${id}`,
+  STATUS: (id: number) => `/permissions/admin/actions/${id}/status`,
+  DELETE: (id: number) => `/permissions/admin/actions/${id}`,
+} as const;
+
+// src/features/admin-permission/api/admin-permission.endpoint.ts
+export const ADMIN_PERMISSION_ENDPOINTS = {
+  LIST: '/permissions/admin/permissions',
+  CREATE: '/permissions/admin/permissions',
+  DETAIL: (id: number) => `/permissions/admin/permissions/${id}`,
+  UPDATE: (id: number) => `/permissions/admin/permissions/${id}`,
+  STATUS: (id: number) => `/permissions/admin/permissions/${id}/status`,
+  DELETE: (id: number) => `/permissions/admin/permissions/${id}`,
+} as const;
 ```
 
 - 상수 파일을 분리하여 API 경로 변경 시 한 곳만 수정
@@ -987,6 +1035,24 @@ export const TENANT_ENDPOINTS = {
 | PATCH | `/tenants/{id}` | 테넌트 수정 | `UpdateTenantRequest` | `UpdateTenantResponse` |
 | DELETE | `/tenants/{id}` | 테넌트 삭제 (사용자 존재 시 400) | — | `void` (204) |
 | PATCH | `/tenants/{id}/status` | 테넌트 상태 변경 (활성/비활성) | `UpdateTenantStatusRequest` | `UpdateTenantStatusResponse` |
+| GET | `/permissions/admin/pages` | RBAC 페이지 목록 조회 | `GetAdminPagesRequest` (query) | `GetAdminPagesResponse` |
+| GET | `/permissions/admin/pages/{id}` | RBAC 페이지 상세 조회 | — | `AdminPageResponse` |
+| POST | `/permissions/admin/pages` | RBAC 페이지 생성 | `CreateAdminPageRequest` | `CreateAdminPageResponse` |
+| PATCH | `/permissions/admin/pages/{id}` | RBAC 페이지 수정 | `UpdateAdminPageRequest` | `UpdateAdminPageResponse` |
+| PATCH | `/permissions/admin/pages/{id}/status` | RBAC 페이지 상태 변경 | `{ isActive: 0 \| 1 }` | `AdminPageResponse` |
+| DELETE | `/permissions/admin/pages/{id}` | RBAC 페이지 삭제 | — | `void` (204) |
+| GET | `/permissions/admin/actions` | RBAC 액션 목록 조회 | `GetAdminActionsRequest` (query) | `GetAdminActionsResponse` |
+| GET | `/permissions/admin/actions/{id}` | RBAC 액션 상세 조회 | — | `AdminActionResponse` |
+| POST | `/permissions/admin/actions` | RBAC 액션 생성 | `CreateAdminActionRequest` | `CreateAdminActionResponse` |
+| PATCH | `/permissions/admin/actions/{id}` | RBAC 액션 수정 | `UpdateAdminActionRequest` | `UpdateAdminActionResponse` |
+| PATCH | `/permissions/admin/actions/{id}/status` | RBAC 액션 상태 변경 | `{ isActive: 0 \| 1 }` | `AdminActionResponse` |
+| DELETE | `/permissions/admin/actions/{id}` | RBAC 액션 삭제 | — | `void` (204) |
+| GET | `/permissions/admin/permissions` | RBAC 권한 목록 조회 | `GetAdminPermissionsRequest` (query) | `GetAdminPermissionsResponse` |
+| GET | `/permissions/admin/permissions/{id}` | RBAC 권한 상세 조회 | — | `AdminPermissionResponse` |
+| POST | `/permissions/admin/permissions` | RBAC 권한 생성 | `CreateAdminPermissionRequest` | `CreateAdminPermissionResponse` |
+| PATCH | `/permissions/admin/permissions/{id}` | RBAC 권한 수정 | `UpdateAdminPermissionRequest` | `UpdateAdminPermissionResponse` |
+| PATCH | `/permissions/admin/permissions/{id}/status` | RBAC 권한 상태 변경 | `{ isActive: 0 \| 1 }` | `AdminPermissionResponse` |
+| DELETE | `/permissions/admin/permissions/{id}` | RBAC 권한 삭제 | — | `void` (204) |
 
 ---
 
@@ -1703,3 +1769,159 @@ interface UpdateTenantStatusRequest {
 | rowKey | `userSeq` | `tenantId` |
 
 > **설계 의도**: 테넌트 관리는 사용자 관리와 동일한 FSD 패턴(types → api → model → ui → index.ts → page)을 따르면서도, API 스펙의 차이(페이지네이션 필드명, 정렬 파라미터 대소문자, DELETE 엔드포인트)를 정확히 반영합니다. 삭제 기능은 서버 측에서 사용자가 존재하는 테넌트의 삭제를 거부(400)하므로, UI에서 확인 다이얼로그에 이 제약을 안내합니다.
+
+### 11.5 페이지 관리 Feature (`features/admin-page/`)
+
+RBAC 권한 시스템의 **페이지**(관리 대상 화면)에 대한 CRUD, 상태 변경, 삭제, 계층 구조(부모-자식) 관리를 담당합니다.
+
+**Feature Slice 구조:**
+
+```
+features/admin-page/
+├─ index.ts                                  # Public API
+├─ api/
+│  ├─ admin-page.endpoint.ts                 # ADMIN_PAGE_ENDPOINTS 상수
+│  ├─ get-admin-pages.api.ts                 # GET /permissions/admin/pages
+│  ├─ get-admin-page.api.ts                  # GET /permissions/admin/pages/{id}
+│  ├─ create-admin-page.api.ts               # POST /permissions/admin/pages
+│  ├─ update-admin-page.api.ts               # PATCH /permissions/admin/pages/{id}
+│  ├─ update-admin-page-status.api.ts        # PATCH /permissions/admin/pages/{id}/status
+│  └─ delete-admin-page.api.ts               # DELETE /permissions/admin/pages/{id}
+├─ model/
+│  ├─ use-admin-pages.ts                     # useQuery — 목록 조회 (queryKey: ['admin-pages', params], enabled 옵션 지원)
+│  ├─ use-admin-page.ts                      # useQuery — 상세 조회 (queryKey: ['admin-pages', id])
+│  ├─ use-create-admin-page.ts               # useMutation + invalidateQueries(['admin-pages'])
+│  ├─ use-update-admin-page.ts               # useMutation + invalidateQueries(['admin-pages'])
+│  ├─ use-update-admin-page-status.ts        # useMutation + invalidateQueries(['admin-pages'])
+│  ├─ use-delete-admin-page.ts               # useMutation + invalidateQueries(['admin-pages'])
+│  ├─ create-admin-page.schema.ts            # Zod 스키마 (pageName, path, displayName, description, parentId, sortOrder)
+│  └─ update-admin-page.schema.ts            # Zod 스키마 (동일 필드)
+├─ types/
+│  └─ admin-page.type.ts                     # AdminPageListItem, AdminPageResponse, Get/Create/Update Request/Response
+└─ ui/
+   ├─ admin-page-table/                      # 페이지 목록 테이블
+   │  ├─ admin-page-table.tsx                # 이름(root/child 스타일), 경로(code), 표시이름, 상위페이지(Tag), 상태, 정렬, 하위수, 권한수, Dropdown(상세/수정/상태/삭제)
+   │  └─ admin-page-table.module.css
+   ├─ admin-page-detail/                     # 상세 보기
+   │  └─ admin-page-detail.tsx               # Descriptions (bordered, 2열) + 하위 페이지 Table
+   ├─ admin-page-create-form/                # 생성 폼
+   │  ├─ admin-page-create-form.tsx          # parentPages prop으로 상위 페이지 Select 옵션 전달
+   │  └─ admin-page-create-form.module.css
+   └─ admin-page-edit-form/                  # 수정 폼
+      ├─ admin-page-edit-form.tsx            # 2섹션: 기본 정보 / 계층 구조, parentId 자기참조 필터링
+      └─ admin-page-edit-form.module.css
+```
+
+**페이지 관리 페이지 (`pages/admin-page-manage/admin-page-manage-page.tsx`):**
+- 라우트: `/permissions/admin/pages`
+- 필터: 검색(이름/경로/표시이름), 부모 필터(전체/최상위만), 상태 필터
+- 모달: 생성, 수정(상세 조회 후 defaultValues 설정), 상세 보기(Descriptions + 하위 페이지)
+- 확인 다이얼로그: 상태 변경, 삭제
+- `useAdminPages`에 `enabled` 옵션을 사용하여 모달이 열릴 때만 상위 페이지 목록 조회 (API 이중 호출 방지)
+
+### 11.6 액션 관리 Feature (`features/admin-action/`)
+
+RBAC 권한 시스템의 **액션**(read, create, update, delete 등)에 대한 CRUD, 상태 변경, 삭제를 담당합니다.
+
+**Feature Slice 구조:**
+
+```
+features/admin-action/
+├─ index.ts
+├─ api/
+│  ├─ admin-action.endpoint.ts               # ADMIN_ACTION_ENDPOINTS 상수
+│  ├─ get-admin-actions.api.ts               # GET /permissions/admin/actions
+│  ├─ get-admin-action.api.ts                # GET /permissions/admin/actions/{id}
+│  ├─ create-admin-action.api.ts             # POST /permissions/admin/actions
+│  ├─ update-admin-action.api.ts             # PATCH /permissions/admin/actions/{id}
+│  ├─ update-admin-action-status.api.ts      # PATCH /permissions/admin/actions/{id}/status
+│  └─ delete-admin-action.api.ts             # DELETE /permissions/admin/actions/{id}
+├─ model/
+│  ├─ use-admin-actions.ts                   # useQuery (queryKey: ['admin-actions', params])
+│  ├─ use-admin-action.ts                    # useQuery (queryKey: ['admin-actions', id])
+│  ├─ use-create-admin-action.ts             # useMutation
+│  ├─ use-update-admin-action.ts             # useMutation
+│  ├─ use-update-admin-action-status.ts      # useMutation
+│  ├─ use-delete-admin-action.ts             # useMutation
+│  ├─ create-admin-action.schema.ts          # Zod (actionName required max 50, displayName optional)
+│  └─ update-admin-action.schema.ts          # Zod (동일)
+├─ types/
+│  └─ admin-action.type.ts                   # AdminActionListItem, AdminActionResponse 등
+└─ ui/
+   ├─ admin-action-table/
+   │  ├─ admin-action-table.tsx              # actionName(code), displayName, 상태, 권한수, Dropdown(상세/수정/상태/삭제)
+   │  └─ admin-action-table.module.css
+   ├─ admin-action-detail/                   # 상세 보기
+   │  └─ admin-action-detail.tsx             # Descriptions (bordered, 2열) — ID, 상태, actionName(code), displayName, 날짜
+   ├─ admin-action-create-form/
+   │  ├─ admin-action-create-form.tsx
+   │  └─ admin-action-create-form.module.css
+   └─ admin-action-edit-form/
+      ├─ admin-action-edit-form.tsx           # 2섹션: 기본 정보 / 표시 정보
+      └─ admin-action-edit-form.module.css
+```
+
+**액션 관리 페이지 (`pages/admin-action-manage/admin-action-manage-page.tsx`):**
+- 라우트: `/permissions/admin/actions`
+- 필터: 검색(이름/표시이름), 상태 필터
+- 모달: 생성, 수정, 상세 보기(Descriptions)
+
+### 11.7 권한 관리 Feature (`features/admin-permission/`)
+
+RBAC 권한 시스템의 **권한**(페이지+액션 조합)에 대한 CRUD, 상태 변경, 삭제를 담당합니다. **크로스 피처 합성** 패턴을 사용하여 페이지 관리(`admin-page`)와 액션 관리(`admin-action`) feature의 데이터를 pages 레이어에서 조합합니다.
+
+**Feature Slice 구조:**
+
+```
+features/admin-permission/
+├─ index.ts
+├─ api/
+│  ├─ admin-permission.endpoint.ts           # ADMIN_PERMISSION_ENDPOINTS 상수
+│  ├─ get-admin-permissions.api.ts           # GET /permissions/admin/permissions
+│  ├─ get-admin-permission.api.ts            # GET /permissions/admin/permissions/{id}
+│  ├─ create-admin-permission.api.ts         # POST /permissions/admin/permissions
+│  ├─ update-admin-permission.api.ts         # PATCH /permissions/admin/permissions/{id}
+│  ├─ update-admin-permission-status.api.ts  # PATCH /permissions/admin/permissions/{id}/status
+│  └─ delete-admin-permission.api.ts         # DELETE /permissions/admin/permissions/{id}
+├─ model/
+│  ├─ use-admin-permissions.ts               # useQuery (queryKey: ['admin-permissions', params])
+│  ├─ use-admin-permission.ts                # useQuery (queryKey: ['admin-permissions', id])
+│  ├─ use-create-admin-permission.ts         # useMutation
+│  ├─ use-update-admin-permission.ts         # useMutation
+│  ├─ use-update-admin-permission-status.ts  # useMutation
+│  ├─ use-delete-admin-permission.ts         # useMutation
+│  ├─ create-admin-permission.schema.ts      # Zod (pageId min(1), actionId min(1), displayName/description optional)
+│  └─ update-admin-permission.schema.ts      # Zod (동일)
+├─ types/
+│  └─ admin-permission.type.ts               # AdminPermissionListItem (page/action 중첩 객체), Request/Response
+└─ ui/
+   ├─ admin-permission-table/
+   │  ├─ admin-permission-table.tsx          # 표시이름, 설명, 페이지(Tag), 액션(Tag), 상태, Dropdown(상세/수정/상태/삭제)
+   │  └─ admin-permission-table.module.css
+   ├─ admin-permission-detail/               # 상세 보기
+   │  └─ admin-permission-detail.tsx         # Descriptions (bordered, 2열) — 페이지/액션 Tag+code, displayName, description, 날짜
+   ├─ admin-permission-create-form/
+   │  ├─ admin-permission-create-form.tsx    # pages/actions props로 Select 옵션 전달
+   │  └─ admin-permission-create-form.module.css
+   └─ admin-permission-edit-form/
+      ├─ admin-permission-edit-form.tsx       # 2섹션: 연결 정보(페이지/액션 Select) / 표시 정보
+      └─ admin-permission-edit-form.module.css
+```
+
+**권한 관리 페이지 (`pages/admin-permission-manage/admin-permission-manage-page.tsx`):**
+- 라우트: `/permissions/admin/permissions`
+- **크로스 피처 합성**: `useAdminPages`(`@features/admin-page`) + `useAdminActions`(`@features/admin-action`)로 페이지/액션 목록을 가져와 필터 Select와 생성/수정 폼에 props로 전달
+- 필터: 검색(표시이름/설명), 페이지 필터(Select), 액션 필터(Select), 상태 필터
+- 모달: 생성, 수정, 상세 보기(페이지/액션 Tag+code)
+
+**RBAC 3 Feature의 공통 패턴:**
+
+| 항목 | 페이지 관리 | 액션 관리 | 권한 관리 |
+|------|-----------|---------|---------|
+| API 경로 | `/permissions/admin/pages` | `/permissions/admin/actions` | `/permissions/admin/permissions` |
+| rowKey | `pageId` | `actionId` | `permissionId` |
+| Query Key | `['admin-pages']` | `['admin-actions']` | `['admin-permissions']` |
+| 페이지네이션 | `page`/`limit` + `ASC`/`DESC` | 동일 | 동일 |
+| 계층 구조 | 있음 (parentId, children) | 없음 | 페이지+액션 조합 |
+| 상세 보기 | Descriptions + 하위 페이지 Table | Descriptions | Descriptions (페이지/액션 Tag+code) |
+| 크로스 피처 | 없음 | 없음 | admin-page + admin-action |
