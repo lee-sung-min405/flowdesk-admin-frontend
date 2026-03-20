@@ -270,14 +270,45 @@ flowdesk-admin-frontend/
    │  │        └─ tenant-edit-form.module.css
    │  │
    │  ├─ role/                   # 역할 관리 도메인
-   │  │  ├─ index.ts             # Public API (useRoles, getRolesApi, 타입 노출)
+   │  │  ├─ index.ts             # Public API (UI 4개, 훅 10개, 스키마 2개, 타입 노출)
    │  │  ├─ api/
    │  │  │  ├─ role.endpoint.ts  # API 엔드포인트 상수 (ROLE_ENDPOINTS)
-   │  │  │  └─ get-roles.api.ts  # GET /roles (역할 목록 조회)
+   │  │  │  ├─ get-roles.api.ts  # GET /roles (역할 목록 조회)
+   │  │  │  ├─ get-role.api.ts   # GET /roles/{id} (상세 조회)
+   │  │  │  ├─ create-role.api.ts  # POST /roles (생성)
+   │  │  │  ├─ update-role.api.ts  # PATCH /roles/{id} (수정)
+   │  │  │  ├─ delete-role.api.ts  # DELETE /roles/{id} (삭제)
+   │  │  │  ├─ update-role-status.api.ts  # PATCH /roles/{id}/status (상태 변경)
+   │  │  │  ├─ update-role-permissions.api.ts  # PATCH /roles/{id}/permissions (권한 수정)
+   │  │  │  ├─ copy-role-permissions.api.ts  # PUT /roles/{id}/permissions (권한 복사)
+   │  │  │  └─ update-role-users.api.ts  # PATCH /users/{userSeq}/roles (사용자-역할 할당/해제)
    │  │  ├─ model/
-   │  │  │  └─ use-roles.ts      # useRoles() 역할 목록 조회 훅 (useQuery)
-   │  │  └─ types/
-   │  │     └─ role.type.ts      # Role, GetRolesRequest/Response 타입
+   │  │  │  ├─ use-roles.ts      # useRoles() 역할 목록 조회 훅 (useQuery, enabled 옵션)
+   │  │  │  ├─ use-role.ts       # useRole() 역할 상세 조회 훅 (useQuery)
+   │  │  │  ├─ use-create-role.ts  # useCreateRole() 뮤테이션 훅
+   │  │  │  ├─ use-update-role.ts  # useUpdateRole() 뮤테이션 훅
+   │  │  │  ├─ use-delete-role.ts  # useDeleteRole() 뮤테이션 훅
+   │  │  │  ├─ use-update-role-status.ts  # useUpdateRoleStatus() 뮤테이션 훅
+   │  │  │  ├─ use-update-role-permissions.ts  # useUpdateRolePermissions() 뮤테이션 훅
+   │  │  │  ├─ use-copy-role-permissions.ts  # useCopyRolePermissions() 뮤테이션 훅
+   │  │  │  ├─ use-update-role-users.ts  # useAddUserToRole() + useRemoveUserFromRole() 뮤테이션 훅
+   │  │  │  ├─ create-role.schema.ts  # Zod 역할 생성 스키마
+   │  │  │  └─ update-role.schema.ts  # Zod 역할 수정 스키마
+   │  │  ├─ types/
+   │  │  │  └─ role.type.ts      # Role, RoleDetailResponse, CRUD Request/Response, 권한/사용자 타입
+   │  │  └─ ui/                  # 도메인 UI 컴포넌트
+   │  │     ├─ role-table/
+   │  │     │  ├─ role-table.tsx  # 역할 목록 테이블 (통계 바, 페이지네이션, Dropdown 액션 메뉴)
+   │  │     │  └─ role-table.module.css
+   │  │     ├─ role-create-form/
+   │  │     │  ├─ role-create-form.tsx  # 역할 생성 폼
+   │  │     │  └─ role-create-form.module.css
+   │  │     ├─ role-edit-form/
+   │  │     │  ├─ role-edit-form.tsx  # 역할 수정 폼
+   │  │     │  └─ role-edit-form.module.css
+   │  │     └─ role-detail-drawer/
+   │  │        ├─ role-detail-drawer.tsx  # 역할 상세 Drawer (3탭: 기본정보, 권한관리, 할당된 사용자)
+   │  │        └─ role-detail-drawer.module.css
    │  │
    │  ├─ super-dashboard/        # 슈퍼 관리자 대시보드 도메인
    │  │  ├─ index.ts             # Public API (UI 컴포넌트 5개, useSuperDashboard 훅, 타입 노출)
@@ -340,9 +371,12 @@ flowdesk-admin-frontend/
       ├─ super-dashboard/
       │  ├─ super-dashboard-page.tsx       # 슈퍼 관리자 대시보드 (전체 시스템 현황)
       │  └─ super-dashboard-page.module.css
-      └─ permission-catalog/
+      ├─ permission-catalog/
          ├─ permission-catalog-page.tsx    # 권한 카탈로그 (트리 기반 매트릭스 + 검색)
          └─ permission-catalog-page.module.css
+      └─ role-manage/
+         ├─ role-manage-page.tsx           # 역할 관리 페이지 (CRUD, 권한 매핑, 사용자 할당)
+         └─ role-manage-page.module.css
 ```
 
 ## 폴더/파일 구조 규칙 및 사용 가이드
@@ -456,6 +490,7 @@ features/{도메인명}/
 | `/permissions/admin/actions` | `AdminActionManagePage` | `MainLayout` | **필요** | RBAC 액션 관리 (CRUD, 상세 보기) |
 | `/permissions/admin/permissions` | `AdminPermissionManagePage` | `MainLayout` | **필요** | RBAC 권한 관리 (페이지+액션 조합, 크로스 피처) |
 | `/permissions/catalog` | `PermissionCatalogPage` | `MainLayout` | **필요** | 권한 카탈로그 (트리 구조 페이지×액션 매트릭스, 검색, 접기/펼치기) |
+| `/roles` | `RoleManagePage` | `MainLayout` | **필요** | 역할 관리 (CRUD, 권한 매핑, 사용자 할당) |
 
 ## 구현 현황
 
@@ -480,6 +515,7 @@ features/{도메인명}/
 | 사용자 관리 | ✅ 완료 | 사용자 CRUD, 검색/필터, 상태 변경, 비밀번호 초기화, 강제 로그아웃, 역할 배정, **상세 보기** |
 | 테넌트 관리 | ✅ 완료 | 테넌트 CRUD, 검색/필터, 상태 변경(활성/비활성), 삭제(사용자 존재 시 차단), 도메인 관리, **상세 보기** |
 | 역할 관리 (기본) | ✅ 완료 | 역할 목록 조회, 사용자 수정 시 역할 다중 선택 (features/role 슬라이스 분리) |
+| 역할 관리 (전체) | ✅ 완료 | 역할 CRUD, 권한 매트릭스 (페이지×액션 체크박스), 권한 복사, 사용자 할당/해제 (서버사이드 페이지네이션), 3탭 Drawer, enabled 가드 최적화 |
 | 슈퍼 관리자 대시보드 | ✅ 완료 | 전체 현황(8지표), 오늘 현황(4지표), 월별 트렌드 차트, 보안 현황, 테넌트별 상세 통계 |
 | RBAC 페이지 관리 | ✅ 완료 | 페이지 CRUD, 상세 보기(Descriptions + 하위 페이지 Table), 상태 변경, 삭제, 계층(부모-자식) 구조 |
 | RBAC 액션 관리 | ✅ 완료 | 액션 CRUD, 상세 보기(Descriptions), 상태 변경, 삭제 |

@@ -4,9 +4,10 @@ import type { ErrorResponse } from '@shared/types/error-response.type';
 import type { GetRolesRequest, GetRolesResponse } from '../types/role.type';
 import { getRolesApi } from '../api/get-roles.api';
 
-export function useRoles(params?: GetRolesRequest) {
+export function useRoles(params?: GetRolesRequest, options?: { enabled?: boolean }) {
   return useQuery<GetRolesResponse, AxiosError<ErrorResponse>>({
     queryKey: ['roles', params],
     queryFn: () => getRolesApi(params),
+    enabled: options?.enabled,
   });
 }

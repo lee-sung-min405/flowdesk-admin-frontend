@@ -16,6 +16,7 @@ const AdminPageManagePage = lazy(() => import('@pages/admin-page-manage/admin-pa
 const AdminActionManagePage = lazy(() => import('@pages/admin-action-manage/admin-action-manage-page'));
 const AdminPermissionManagePage = lazy(() => import('@pages/admin-permission-manage/admin-permission-manage-page'));
 const PermissionCatalogPage = lazy(() => import('@pages/permission-catalog/permission-catalog-page'));
+const RoleManagePage = lazy(() => import('@pages/role-manage/role-manage-page'));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -48,6 +49,7 @@ export default function App() {
               <Route path="/permissions/admin/actions" element={<AdminActionManagePage />} />
               <Route path="/permissions/admin/permissions" element={<AdminPermissionManagePage />} />
               <Route path="/permissions/catalog" element={<PermissionCatalogPage />} />
+              <Route path="/roles" element={<RoleManagePage />} />
             </Route>
 
             <Route path="/" element={<Navigate to="/login" />} />

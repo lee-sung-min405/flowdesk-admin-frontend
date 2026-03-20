@@ -162,6 +162,8 @@ const SuperDashboardPage = lazy(() => import('@pages/super-dashboard/super-dashb
 const AdminPageManagePage = lazy(() => import('@pages/admin-page-manage/admin-page-manage-page'));
 const AdminActionManagePage = lazy(() => import('@pages/admin-action-manage/admin-action-manage-page'));
 const AdminPermissionManagePage = lazy(() => import('@pages/admin-permission-manage/admin-permission-manage-page'));
+const PermissionCatalogPage = lazy(() => import('@pages/permission-catalog/permission-catalog-page'));
+const RoleManagePage = lazy(() => import('@pages/role-manage/role-manage-page'));
 
 <Suspense fallback={<Spin />}>
   <Routes>
@@ -178,6 +180,8 @@ const AdminPermissionManagePage = lazy(() => import('@pages/admin-permission-man
       <Route path="/permissions/admin/pages" element={<AdminPageManagePage />} />
       <Route path="/permissions/admin/actions" element={<AdminActionManagePage />} />
       <Route path="/permissions/admin/permissions" element={<AdminPermissionManagePage />} />
+      <Route path="/permissions/catalog" element={<PermissionCatalogPage />} />
+      <Route path="/roles" element={<RoleManagePage />} />
     </Route>
 
     <Route path="/" element={<Navigate to="/login" />} />
@@ -209,6 +213,8 @@ const AdminPermissionManagePage = lazy(() => import('@pages/admin-permission-man
 | `/permissions/admin/pages` | `AdminPageManagePage` | `MainLayout` | `ProtectedRoute` | RBAC 페이지 관리 (CRUD, 상세 보기, 계층 구조) |
 | `/permissions/admin/actions` | `AdminActionManagePage` | `MainLayout` | `ProtectedRoute` | RBAC 액션 관리 (CRUD, 상세 보기) |
 | `/permissions/admin/permissions` | `AdminPermissionManagePage` | `MainLayout` | `ProtectedRoute` | RBAC 권한 관리 (페이지+액션 조합, 상세 보기) |
+| `/permissions/catalog` | `PermissionCatalogPage` | `MainLayout` | `ProtectedRoute` | 권한 카탈로그 (트리 구조 페이지×액션 매트릭스) |
+| `/roles` | `RoleManagePage` | `MainLayout` | `ProtectedRoute` | 역할 관리 (CRUD, 권한 매핑, 사용자 할당) |
 
 ### 2.4 메인 레이아웃 구조
 
@@ -957,6 +963,13 @@ export const USER_ENDPOINTS = {
 // src/features/role/api/role.endpoint.ts
 export const ROLE_ENDPOINTS = {
   LIST: '/roles',
+  CREATE: '/roles',
+  DETAIL: (id: number) => `/roles/${id}`,
+  UPDATE: (id: number) => `/roles/${id}`,
+  STATUS: (id: number) => `/roles/${id}/status`,
+  DELETE: (id: number) => `/roles/${id}`,
+  PERMISSIONS: (id: number) => `/roles/${id}/permissions`,
+  COPY_PERMISSIONS: (id: number) => `/roles/${id}/permissions`,
 } as const;
 
 // src/features/super-dashboard/api/super-dashboard.endpoint.ts
@@ -1029,6 +1042,13 @@ export const ADMIN_PERMISSION_ENDPOINTS = {
 | POST | `/users/{id}/invalidate-tokens` | 강제 로그아웃 (토큰 무효화) | — | `void` (204) |
 | PATCH | `/users/{id}/roles` | 사용자 역할 변경 | `UpdateUserRolesRequest` | `UpdateUserRolesResponse` |
 | GET | `/roles` | 역할 목록 조회 | `GetRolesRequest` (query) | `GetRolesResponse` |
+| GET | `/roles/{id}` | 역할 상세 조회 | — | `RoleDetailResponse` |
+| POST | `/roles` | 역할 생성 | `CreateRoleRequest` | `CreateRoleResponse` |
+| PATCH | `/roles/{id}` | 역할 수정 | `UpdateRoleRequest` | `UpdateRoleResponse` |
+| DELETE | `/roles/{id}` | 역할 삭제 | — | `void` (204) |
+| PATCH | `/roles/{id}/status` | 역할 상태 변경 | `UpdateRoleStatusRequest` | `UpdateRoleStatusResponse` |
+| PATCH | `/roles/{id}/permissions` | 역할 권한 수정 | `UpdateRolePermissionsRequest` | `UpdateRolePermissionsResponse` |
+| PUT | `/roles/{id}/permissions` | 역할 권한 복사 | `CopyRolePermissionsRequest` | `CopyRolePermissionsResponse` |
 | GET | `/super/dashboard` | 슈퍼 관리자 대시보드 데이터 | — | `SuperDashboardResponse` |
 | GET | `/tenants` | 테넌트 목록 조회 | `GetTenantsRequest` (query) | `GetTenantsResponse` |
 | GET | `/tenants/{id}` | 테넌트 상세 조회 | — | `GetTenantResponse` |
@@ -1518,21 +1538,65 @@ interface GetUserResponse extends User {
 
 ### 11.2 역할 관리 Feature (`features/role/`)
 
-역할(Role) 도메인을 독립 슬라이스로 분리하여, 사용자 관리와 향후 권한 관리에서 공통 사용합니다.
+역할(Role) 도메인의 CRUD, 권한 매핑, 사용자 할당 기능을 담당합니다. 사용자 관리에서 역할 배정 시에도 공통 사용합니다.
 
 **Feature Slice 구조:**
 
 ```
 features/role/
-├─ index.ts                  # Public API (useRoles, getRolesApi, 타입)
+├─ index.ts                              # Public API (UI 4개, 훅 10개, 스키마 2개, 타입)
 ├─ api/
-│  ├─ role.endpoint.ts       # ROLE_ENDPOINTS = { LIST: '/roles' }
-│  └─ get-roles.api.ts       # GET /roles (페이지네이션, 검색, 필터)
+│  ├─ role.endpoint.ts                   # ROLE_ENDPOINTS (LIST, CREATE, DETAIL, UPDATE, STATUS, DELETE, PERMISSIONS, COPY_PERMISSIONS)
+│  ├─ get-roles.api.ts                   # GET /roles (페이지네이션, 검색, 필터, 정렬)
+│  ├─ get-role.api.ts                    # GET /roles/{id} (상세 조회 + 권한 + 할당 사용자)
+│  ├─ create-role.api.ts                 # POST /roles
+│  ├─ update-role.api.ts                 # PATCH /roles/{id}
+│  ├─ delete-role.api.ts                 # DELETE /roles/{id}
+│  ├─ update-role-status.api.ts          # PATCH /roles/{id}/status
+│  ├─ update-role-permissions.api.ts     # PATCH /roles/{id}/permissions (권한 추가/제거)
+│  ├─ copy-role-permissions.api.ts       # PUT /roles/{id}/permissions (다른 역할 권한 복사)
+│  └─ update-role-users.api.ts           # PATCH /users/{userSeq}/roles (사용자-역할 할당/해제)
 ├─ model/
-│  └─ use-roles.ts           # useQuery — 역할 목록 조회 (queryKey: ['roles', params])
-└─ types/
-   └─ role.type.ts           # Role, GetRolesRequest, GetRolesResponse
+│  ├─ use-roles.ts                       # useQuery — 역할 목록 조회 (queryKey: ['roles', params], enabled 옵션)
+│  ├─ use-role.ts                        # useQuery — 역할 상세 조회 (queryKey: ['roles', id], enabled: id > 0)
+│  ├─ use-create-role.ts                 # useMutation + invalidateQueries(['roles'])
+│  ├─ use-update-role.ts                 # useMutation + invalidateQueries(['roles'])
+│  ├─ use-delete-role.ts                 # useMutation + invalidateQueries(['roles'])
+│  ├─ use-update-role-status.ts          # useMutation + invalidateQueries(['roles'])
+│  ├─ use-update-role-permissions.ts     # useMutation + invalidateQueries(['roles'])
+│  ├─ use-copy-role-permissions.ts       # useMutation + invalidateQueries(['roles'])
+│  ├─ use-update-role-users.ts           # useAddUserToRole + useRemoveUserFromRole (invalidate ['roles'] + ['users'])
+│  ├─ create-role.schema.ts              # Zod 스키마 (roleName, displayName, description)
+│  └─ update-role.schema.ts              # Zod 스키마 (roleName, displayName, description — optional)
+├─ types/
+│  └─ role.type.ts                       # Role, RoleDetailResponse, CRUD Request/Response, 권한/사용자 관련 타입
+└─ ui/
+   ├─ role-table/                        # 역할 목록 테이블
+   │  ├─ role-table.tsx                  # AntD Table + 통계 바 + 페이지네이션 + 상태 토글 + Dropdown 메뉴
+   │  └─ role-table.module.css
+   ├─ role-create-form/                  # 역할 생성 폼
+   │  ├─ role-create-form.tsx            # RHF + Zod (roleName, displayName, description)
+   │  └─ role-create-form.module.css
+   ├─ role-edit-form/                    # 역할 수정 폼
+   │  ├─ role-edit-form.tsx              # 3섹션 구조 (기본정보 / 설명 / 버튼)
+   │  └─ role-edit-form.module.css
+   └─ role-detail-drawer/               # 역할 상세 Drawer (3탭)
+      ├─ role-detail-drawer.tsx          # 기본 정보 / 권한 관리 / 할당된 사용자
+      └─ role-detail-drawer.module.css   #   ├─ 기본 정보: Descriptions + 권한 요약
+                                         #   ├─ 권한 관리: 페이지×액션 체크박스 매트릭스, 변경 감지, 역할 간 권한 복사
+                                         #   └─ 할당된 사용자: 할당 사용자 테이블 + 서버사이드 페이지네이션 사용자 추가 테이블
 ```
+
+**역할 관리 페이지 (`pages/role-manage/role-manage-page.tsx`):**
+- 페이지 헤더: 제목 + 총 역할 수 Badge + 검색/필터(전체/활성/비활성) 툴바 + 생성 버튼
+- 테이블: 역할 이름(code), 표시 이름, 설명, 사용자 수, 권한 수, 상태, 생성일, 액션 드롭다운
+- 모달: 역할 생성, 역할 수정
+- Drawer (3탭):
+  - **기본 정보**: Descriptions (역할 속성, 할당 사용자 수, 권한 요약)
+  - **권한 관리**: 권한 카탈로그 기반 페이지×액션 체크박스 매트릭스, 변경사항(add/remove) 자동 감지, 다른 역할 권한 복사, 페이지 검색
+  - **할당된 사용자**: 현재 할당 사용자 테이블 (해제 버튼) + 전체 사용자 서버사이드 페이지네이션 테이블 (추가 버튼)
+- 확인 다이얼로그: 상태 변경(활성↔비활성), 삭제, 권한 복사, 사용자 할당 해제
+- 데이터 최적화: `usePermissionCatalog`, `useRoles(allActive)`, `useUsers`에 `enabled: drawerOpen` 가드 → Drawer 열릴 때만 호출
 
 **주요 타입:**
 
@@ -1550,13 +1614,34 @@ interface Role {
   permissionCount: number;
 }
 
+interface RoleDetailResponse extends Omit<Role, 'userCount' | 'permissionCount'> {
+  permissionsByPage: RolePermissionsByPage[];
+  assignedUsers: RoleAssignedUser[];
+}
+
+interface RolePermissionsByPage {
+  pageId: number;
+  pageName: string;
+  pageDisplayName: string;
+  permissions: RolePermission[];
+}
+
+interface RoleAssignedUser {
+  userSeq: number;
+  userId: string;
+  userName: string;
+  email: string;
+  isActive: number;
+  assignedAt: string;
+}
+
 interface GetRolesResponse {
   items: Role[];
   pageInfo: { currentPage: number; pageSize: number; totalItems: number; totalPages: number };
 }
 ```
 
-> **설계 의도**: Role은 사용자 수정 시 역할 배정에 사용되며, 향후 역할 CRUD/권한 관리 페이지 확장 시 이 슬라이스에 기능을 추가합니다. FSD 원칙에 따라 `features/user/`와 `features/role/`은 서로 직접 참조하지 않으며, `pages/` 레이어에서 조합합니다.
+> **설계 의도**: FSD 원칙에 따라 `features/user/`와 `features/role/`은 서로 직접 참조하지 않으며, `pages/` 레이어에서 조합합니다. 사용자-역할 할당 API(`PATCH /users/:userSeq/roles`)는 role feature 내에서 호출하되, 성공 시 `['users']` 캐시도 무효화하여 양쪽 데이터 정합성을 유지합니다.
 
 ### 11.3 슈퍼 관리자 대시보드 Feature (`features/super-dashboard/`)
 

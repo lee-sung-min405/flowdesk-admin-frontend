@@ -1,0 +1,210 @@
+.loadingContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 300px;
+}
+
+/* ── 기본 정보 탭 ── */
+.detailContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.codeName {
+  font-size: 12px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: var(--color-bg-elevated);
+  color: var(--color-text-secondary);
+}
+
+.emptyValue {
+  color: var(--color-text-tertiary);
+}
+
+/* ── 권한 관리 탭 ── */
+.permissionContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.permissionToolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.permissionToolbarLeft {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.permissionToolbarRight {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.permissionSearchInput {
+  width: 200px;
+}
+
+.permissionCount {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+
+.permissionCountNum {
+  font-weight: 600;
+  color: var(--color-primary);
+}
+
+/* 권한 매트릭스 (체크박스 그리드) */
+.matrixWrapper {
+  overflow-x: auto;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+}
+
+.matrixTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.matrixTable thead tr {
+  background: var(--color-bg-elevated, #fafafa);
+}
+
+.matrixTable th {
+  padding: 10px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  border-bottom: 1px solid var(--color-border);
+  text-align: center;
+  white-space: nowrap;
+}
+
+.matrixTable th:first-child {
+  text-align: left;
+  min-width: 200px;
+}
+
+.matrixTable td {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--color-border-light, #f0f0f0);
+  text-align: center;
+  vertical-align: middle;
+}
+
+.matrixTable td:first-child {
+  text-align: left;
+}
+
+.matrixTable tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.matrixTable tbody tr:hover td {
+  background: rgba(24, 144, 255, 0.04);
+}
+
+.pageNameCell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.pageDisplayName {
+  font-weight: 500;
+  color: var(--color-text);
+}
+
+.pageCodeName {
+  font-size: 11px;
+  color: var(--color-text-tertiary);
+}
+
+.cellEmpty {
+  color: var(--color-border);
+  font-size: 14px;
+  user-select: none;
+}
+
+.noPermissions {
+  padding: 40px 0;
+  text-align: center;
+  color: var(--color-text-secondary);
+  font-size: 14px;
+}
+
+/* 변경사항 인디케이터 */
+.changeIndicator {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  background: var(--color-bg-elevated, #fafafa);
+  border-radius: 6px;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+
+.changeAdd {
+  color: #52c41a;
+  font-weight: 500;
+}
+
+.changeRemove {
+  color: #ff4d4f;
+  font-weight: 500;
+}
+
+/* ── 할당된 사용자 탭 ── */
+.userContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.userSectionHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text);
+  padding: 4px 0;
+  border-bottom: 1px solid var(--color-border-light, #f0f0f0);
+}
+
+.userSectionHeader:nth-of-type(2) {
+  margin-top: 12px;
+}
+
+.noUsers {
+  padding: 24px 0;
+  text-align: center;
+  color: var(--color-text-secondary);
+  font-size: 13px;
+}
+
+.alreadyAssigned {
+  font-size: 12px;
+  color: var(--color-text-tertiary);
+}
+
+.userCodeName {
+  font-size: 12px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: var(--color-bg-elevated);
+  color: var(--color-text-secondary);
+}

@@ -4,9 +4,10 @@ import type { ErrorResponse } from '@shared/types/error-response.type';
 import type { GetUsersRequest, GetUsersResponse } from '../types/user.type';
 import { getUsersApi } from '../api/get-users.api';
 
-export function useUsers(params: GetUsersRequest) {
+export function useUsers(params: GetUsersRequest, options?: { enabled?: boolean }) {
   return useQuery<GetUsersResponse, AxiosError<ErrorResponse>>({
     queryKey: ['users', params],
     queryFn: () => getUsersApi(params),
+    enabled: options?.enabled,
   });
 }
