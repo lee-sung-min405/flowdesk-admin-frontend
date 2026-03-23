@@ -61,6 +61,7 @@
     - [11.8 권한 카탈로그 Feature (`features/permission-catalog/`)](#118-권한-카탈로그-feature-featurespermission-catalog)
     - [11.9 테넌트 상태 관리 Feature (`features/tenant-status/`)](#119-테넌트-상태-관리-feature-featurestenant-status)
     - [11.10 웹사이트 관리 Feature (`features/website/`)](#1110-웹사이트-관리-feature-featureswebsite)
+    - [11.11 보안(차단) 관리 Feature (`features/security/`)](#1111-보안차단-관리-feature-featuressecurity)
 
 ---
 
@@ -175,6 +176,7 @@ const PermissionCatalogPage = lazy(() => import('@pages/permission-catalog/permi
 const RoleManagePage = lazy(() => import('@pages/role-manage/role-manage-page'));
 const TenantStatusManagePage = lazy(() => import('@pages/tenant-status-manage/tenant-status-manage-page'));
 const WebsiteManagePage = lazy(() => import('@pages/website-manage/website-manage-page'));
+const BlockManagePage = lazy(() => import('@pages/block-manage/block-manage-page'));
 
 <Suspense fallback={<Spin />}>
   <Routes>
@@ -195,6 +197,7 @@ const WebsiteManagePage = lazy(() => import('@pages/website-manage/website-manag
       <Route path="/roles" element={<RoleManagePage />} />
       <Route path="/tenants/status" element={<TenantStatusManagePage />} />
       <Route path="/websites" element={<WebsiteManagePage />} />
+      <Route path="/security" element={<BlockManagePage />} />
     </Route>
 
     <Route path="/" element={<Navigate to="/login" />} />
@@ -2308,3 +2311,203 @@ interface Website {
 - 확인 다이얼로그: 활성화/비활성화, 삭제 `Modal.confirm()` 패턴
 
 > **설계 의도**: 웹사이트는 테넌트 격리된 독립 도메인으로, `features/website` 슬라이스로 분리합니다. webCode를 기본키(PK)로 사용하여 숫자 ID 대신 사람이 읽을 수 있는 코드 체계를 적용합니다. 관리자(userSeq)는 사용자 목록에서 Select로 선택하며, 페이지 레이어에서 크로스 피처 합성합니다.
+
+### 11.11 보안(차단) 관리 Feature (`features/security/`)
+
+```
+features/security/
+├─ index.ts                          # Public API (UI 15개, 훅 21개, 스키마 9개, 타입 노출)
+├─ api/
+│  ├─ security.endpoint.ts           # SECURITY_ENDPOINTS 상수 (IP/HP/Word × LIST, CREATE, BULK_CREATE, DETAIL, UPDATE, DELETE, CHECK)
+│  ├─ get-block-ips.api.ts           # GET /security/block-ip (IP 차단 목록 조회)
+│  ├─ get-block-ip.api.ts            # GET /security/block-ip/:id (IP 차단 상세)
+│  ├─ create-block-ip.api.ts         # POST /security/block-ip (IP 차단 등록)
+│  ├─ bulk-create-block-ip.api.ts    # POST /security/block-ip/bulk (IP 차단 대량 등록)
+│  ├─ update-block-ip.api.ts         # PATCH /security/block-ip/:id (IP 차단 수정)
+│  ├─ delete-block-ip.api.ts         # DELETE /security/block-ip/:id (IP 차단 삭제)
+│  ├─ check-block-ip.api.ts          # GET /security/block-ip/check (IP 차단 여부 확인)
+│  ├─ get-block-hps.api.ts           # GET /security/block-hp (휴대폰 차단 목록 조회)
+│  ├─ get-block-hp.api.ts            # GET /security/block-hp/:id (휴대폰 차단 상세)
+│  ├─ create-block-hp.api.ts         # POST /security/block-hp (휴대폰 차단 등록)
+│  ├─ bulk-create-block-hp.api.ts    # POST /security/block-hp/bulk (휴대폰 차단 대량 등록)
+│  ├─ update-block-hp.api.ts         # PATCH /security/block-hp/:id (휴대폰 차단 수정)
+│  ├─ delete-block-hp.api.ts         # DELETE /security/block-hp/:id (휴대폰 차단 삭제)
+│  ├─ check-block-hp.api.ts          # GET /security/block-hp/check (휴대폰 차단 여부 확인)
+│  ├─ get-block-words.api.ts         # GET /security/block-word (금칙어 목록 조회)
+│  ├─ get-block-word.api.ts          # GET /security/block-word/:id (금칙어 상세)
+│  ├─ create-block-word.api.ts       # POST /security/block-word (금칙어 등록)
+│  ├─ bulk-create-block-word.api.ts  # POST /security/block-word/bulk (금칙어 대량 등록)
+│  ├─ update-block-word.api.ts       # PATCH /security/block-word/:id (금칙어 수정)
+│  ├─ delete-block-word.api.ts       # DELETE /security/block-word/:id (금칙어 삭제)
+│  └─ check-block-word.api.ts        # GET /security/block-word/check (금칙어 포함 여부 확인)
+├─ model/
+│  ├─ use-block-ips.ts               # useBlockIps() 목록 조회 훅 (useQuery)
+│  ├─ use-block-ip.ts                # useBlockIp() 상세 조회 훅 (useQuery, enabled: id > 0)
+│  ├─ use-create-block-ip.ts         # useCreateBlockIp() 뮤테이션 훅
+│  ├─ use-bulk-create-block-ip.ts    # useBulkCreateBlockIp() 뮤테이션 훅
+│  ├─ use-update-block-ip.ts         # useUpdateBlockIp() 뮤테이션 훅
+│  ├─ use-delete-block-ip.ts         # useDeleteBlockIp() 뮤테이션 훅
+│  ├─ use-check-block-ip.ts          # useCheckBlockIp() 차단 여부 확인 훅 (useQuery, enabled: ip.length > 0)
+│  ├─ use-block-hps.ts               # useBlockHps() 목록 조회 훅
+│  ├─ use-block-hp.ts                # useBlockHp() 상세 조회 훅
+│  ├─ use-create-block-hp.ts         # useCreateBlockHp() 뮤테이션 훅
+│  ├─ use-bulk-create-block-hp.ts    # useBulkCreateBlockHp() 뮤테이션 훅
+│  ├─ use-update-block-hp.ts         # useUpdateBlockHp() 뮤테이션 훅
+│  ├─ use-delete-block-hp.ts         # useDeleteBlockHp() 뮤테이션 훅
+│  ├─ use-check-block-hp.ts          # useCheckBlockHp() 차단 여부 확인 훅
+│  ├─ use-block-words.ts             # useBlockWords() 목록 조회 훅
+│  ├─ use-block-word.ts              # useBlockWord() 상세 조회 훅
+│  ├─ use-create-block-word.ts       # useCreateBlockWord() 뮤테이션 훅
+│  ├─ use-bulk-create-block-word.ts  # useBulkCreateBlockWord() 뮤테이션 훅
+│  ├─ use-update-block-word.ts       # useUpdateBlockWord() 뮤테이션 훅
+│  ├─ use-delete-block-word.ts       # useDeleteBlockWord() 뮤테이션 훅
+│  ├─ use-check-block-word.ts        # useCheckBlockWord() 금칙어 포함 여부 확인 훅
+│  ├─ create-block-ip.schema.ts      # Zod IP 차단 생성 스키마 (blockIp max 45, reason max 255)
+│  ├─ update-block-ip.schema.ts      # Zod IP 차단 수정 스키마 (reason)
+│  ├─ bulk-create-block-ip.schema.ts # Zod IP 대량 등록 스키마 (ips 텍스트, reason)
+│  ├─ create-block-hp.schema.ts      # Zod 휴대폰 차단 생성 스키마 (blockHp max 20)
+│  ├─ update-block-hp.schema.ts      # Zod 휴대폰 차단 수정 스키마
+│  ├─ bulk-create-block-hp.schema.ts # Zod 휴대폰 대량 등록 스키마
+│  ├─ create-block-word.schema.ts    # Zod 금칙어 생성 스키마 (blockWord max 100, matchType enum)
+│  ├─ update-block-word.schema.ts    # Zod 금칙어 수정 스키마 (matchType, reason)
+│  └─ bulk-create-block-word.schema.ts # Zod 금칙어 대량 등록 스키마
+├─ types/
+│  ├─ block-ip.type.ts               # BlockIp, SecurityPageInfo, CheckBlockedResponse, CRUD Request/Response 타입
+│  ├─ block-hp.type.ts               # BlockHp, CheckBlockHpRequest, CRUD Request/Response 타입
+│  └─ block-word.type.ts             # BlockWord, MatchType, CheckBlockWordRequest, CRUD Request/Response 타입
+└─ ui/
+   ├─ block-ip-table/                # IP 차단 목록 테이블 (통계 바, Badge 상태, Dropdown 액션)
+   ├─ block-ip-detail/               # IP 차단 상세 보기 (Descriptions)
+   ├─ block-ip-create-form/          # IP 차단 등록 폼 (Segmented 단건/대량 토글, 대량 결과 Alert)
+   ├─ block-ip-edit-form/            # IP 차단 수정 폼 (reason)
+   ├─ block-ip-check/                # IP 차단 여부 확인 (Input + 결과 Alert)
+   ├─ block-hp-table/                # 휴대폰 차단 목록 테이블
+   ├─ block-hp-detail/               # 휴대폰 차단 상세 보기
+   ├─ block-hp-create-form/          # 휴대폰 차단 등록 폼 (Segmented 단건/대량 토글)
+   ├─ block-hp-edit-form/            # 휴대폰 차단 수정 폼
+   ├─ block-hp-check/                # 휴대폰 차단 여부 확인
+   ├─ block-word-table/              # 금칙어 목록 테이블 (matchType Tag 컬럼 추가)
+   ├─ block-word-detail/             # 금칙어 상세 보기 (matchType Tag)
+   ├─ block-word-create-form/        # 금칙어 등록 폼 (Segmented + matchType Select)
+   ├─ block-word-edit-form/          # 금칙어 수정 폼 (matchType Select + reason)
+   └─ block-word-check/              # 금칙어 포함 여부 확인 (TextArea + matchedWord 표시)
+```
+
+**도메인 엔티티:**
+
+```typescript
+// SecurityPageInfo — 보안 API 전용 페이지네이션 (currentPage/pageSize 필드명)
+interface SecurityPageInfo {
+  currentPage: number;
+  pageSize: number;
+  totalItems: number;
+  totalPages: number;
+}
+
+interface BlockIp {
+  dbiIdx: number;               // PK
+  tenantId: number;
+  blockIp: string;              // IP 주소 (IPv4/IPv6)
+  reason: string | null;        // 차단 사유
+  isActive: number;             // 활성 상태 (0/1)
+  createdBy: number | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface BlockHp {
+  dbhIdx: number;               // PK
+  tenantId: number;
+  blockHp: string;              // 휴대폰 번호
+  reason: string | null;
+  isActive: number;
+  createdBy: number | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+type MatchType = 'EXACT' | 'CONTAINS' | 'REGEX';
+
+interface BlockWord {
+  dbwIdx: number;               // PK
+  tenantId: number;
+  blockWord: string;            // 금칙어
+  matchType: MatchType;         // 매칭 타입
+  reason: string | null;
+  isActive: number;
+  createdBy: number | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// 차단 여부 확인 공통 응답
+interface CheckBlockedResponse {
+  isBlocked: boolean;
+  reason?: string | null;
+  blockId?: number;
+  matchedWord?: string;         // 금칙어 차단 시에만
+}
+```
+
+**API 엔드포인트:**
+
+| 메서드 | 경로 | 권한 | 설명 |
+|-------|------|------|------|
+| GET | `/security/block-ip` | `security.read` | IP 차단 목록 (q, isActive 필터, 페이지네이션) |
+| GET | `/security/block-ip/:id` | `security.read` | IP 차단 상세 |
+| POST | `/security/block-ip` | `security.create` | IP 차단 등록 |
+| POST | `/security/block-ip/bulk` | `security.create` | IP 차단 대량 등록 (줄바꿈 구분) |
+| PATCH | `/security/block-ip/:id` | `security.update` | IP 차단 수정 |
+| DELETE | `/security/block-ip/:id` | `security.delete` | IP 차단 삭제 |
+| GET | `/security/block-ip/check` | `security.read` | IP 차단 여부 확인 (ip 파라미터) |
+| GET | `/security/block-hp` | `security.read` | 휴대폰 차단 목록 |
+| GET | `/security/block-hp/:id` | `security.read` | 휴대폰 차단 상세 |
+| POST | `/security/block-hp` | `security.create` | 휴대폰 차단 등록 |
+| POST | `/security/block-hp/bulk` | `security.create` | 휴대폰 차단 대량 등록 |
+| PATCH | `/security/block-hp/:id` | `security.update` | 휴대폰 차단 수정 |
+| DELETE | `/security/block-hp/:id` | `security.delete` | 휴대폰 차단 삭제 |
+| GET | `/security/block-hp/check` | `security.read` | 휴대폰 차단 여부 확인 (hp 파라미터) |
+| GET | `/security/block-word` | `security.read` | 금칙어 목록 (matchType 필터 추가) |
+| GET | `/security/block-word/:id` | `security.read` | 금칙어 상세 |
+| POST | `/security/block-word` | `security.create` | 금칙어 등록 |
+| POST | `/security/block-word/bulk` | `security.create` | 금칙어 대량 등록 |
+| PATCH | `/security/block-word/:id` | `security.update` | 금칙어 수정 |
+| DELETE | `/security/block-word/:id` | `security.delete` | 금칙어 삭제 |
+| GET | `/security/block-word/check` | `security.read` | 금칙어 포함 여부 확인 (text 파라미터) |
+
+**UI 컴포넌트:**
+
+| 컴포넌트 | 주요 기능 |
+|---------|----------|
+| **BlockIpTable** | 통계 바(총/활성/비활성), Badge 상태 표시, Dropdown MoreOutlined 액션 메뉴, SecurityPageInfo 기반 페이지네이션 |
+| **BlockIpDetail** | Descriptions (ID, 상태, IP주소, 차단사유, 생성일, 수정일) |
+| **BlockIpCreateForm** | Segmented `단건/대량` 토글, 단건: blockIp + reason, 대량: ips TextArea + reason + 결과 Alert |
+| **BlockIpEditForm** | reason TextArea |
+| **BlockIpCheck** | IP 입력 + 확인 버튼, 결과 Alert (차단: error + 상세, 미차단: success) |
+| **BlockHpTable/Detail/CreateForm/EditForm/Check** | IP와 동일 패턴 (휴대폰 번호 필드) |
+| **BlockWordTable** | matchType 컬럼 추가 — Tag 컬러 코딩 (EXACT=blue, CONTAINS=green, REGEX=orange) |
+| **BlockWordDetail** | matchType Tag 표시 포함 |
+| **BlockWordCreateForm** | Segmented + matchType Select 추가 (단건/대량 모두) |
+| **BlockWordEditForm** | matchType Select + reason TextArea |
+| **BlockWordCheck** | TextArea 입력 + 결과 Alert (matchedWord 추가 표시) |
+
+**차단 관리 페이지 (`pages/block-manage/`):**
+
+```
+pages/block-manage/
+├─ block-manage-page.tsx             # 메인 페이지 (Tabs: IP 차단 / 휴대폰 차단 / 금칙어 관리)
+├─ block-manage-page.module.css      # 공통 CSS (page, toolbar, tabs)
+├─ block-ip-panel.tsx                # IP 차단 탭 패널 (검색/필터 + 테이블 + CRUD 모달 + 차단확인 모달)
+├─ block-hp-panel.tsx                # 휴대폰 차단 탭 패널
+└─ block-word-panel.tsx              # 금칙어 탭 패널 (matchType 필터 추가)
+```
+
+- 라우트: `/security`
+- 페이지 헤더: 제목 "차단 관리" + 설명
+- Ant Design `Tabs` — 3개 탭 (GlobalOutlined IP 차단 | MobileOutlined 휴대폰 차단 | FileTextOutlined 금칙어 관리)
+- 각 탭 패널: 검색 Input + 상태 Select(전체/활성/비활성) + 등록 버튼 + 차단 여부 확인 버튼(SafetyOutlined)
+- 금칙어 패널: matchType Select 필터 추가 (전체 타입/정확히 일치/포함/정규식)
+- 모달: 상세 보기(560px), 등록(520px), 수정(520px), 차단 여부 확인(520px)
+- 확인 다이얼로그: 활성화/비활성화, 삭제 `Modal.confirm()` 패턴
+
+> **설계 의도**: 보안(차단) 관리는 IP, 휴대폰, 금칙어 3가지 차단 도메인을 하나의 `features/security` 슬라이스로 통합합니다. 3개 도메인이 동일한 CRUD + Check 패턴을 공유하므로 하나의 feature slice로 관리하는 것이 응집도 측면에서 유리합니다. 페이지 레이어에서는 `Tabs` 컴포넌트로 3개 도메인을 탭 패널로 분리하되, 각 패널을 별도 컴포넌트로 추출하여 파일 크기와 유지보수성을 확보합니다. 대량 등록은 `Segmented` 컴포넌트로 단건/대량 모드를 토글하여 UX를 개선합니다. 보안 API는 `currentPage`/`pageSize` 필드명을 사용하므로 `SecurityPageInfo` 타입으로 별도 정의합니다.

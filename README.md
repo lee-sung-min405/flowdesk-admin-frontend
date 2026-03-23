@@ -423,6 +423,36 @@ flowdesk-admin-frontend/
    │           ├─ website-edit-form.tsx       # 웹사이트 수정 폼 (기본정보/상세정보 섹션 분리)
    │           └─ website-edit-form.module.css
    │
+   │  └─ security/                # 보안(차단) 관리 도메인
+   │     ├─ index.ts             # Public API (UI 15개, 훅 21개, 스키마 9개, 타입 노출)
+   │     ├─ api/                 # API 호출 함수 (21개: IP/HP/Word × 7 엔드포인트)
+   │     │  ├─ security.endpoint.ts       # SECURITY_ENDPOINTS 상수
+   │     │  ├─ get-block-ips.api.ts       # GET /security/block-ip
+   │     │  ├─ create-block-ip.api.ts     # POST /security/block-ip
+   │     │  ├─ bulk-create-block-ip.api.ts# POST /security/block-ip/bulk
+   │     │  ├─ check-block-ip.api.ts      # GET /security/block-ip/check
+   │     │  └─ ... (block-hp 7개, block-word 7개 동일 패턴)
+   │     ├─ model/               # 커스텀 훅 21개 + Zod 스키마 9개
+   │     │  ├─ use-block-ips.ts           # useBlockIps() 목록 조회 훅 (useQuery)
+   │     │  ├─ use-check-block-ip.ts      # useCheckBlockIp() 차단 여부 확인 훅
+   │     │  ├─ create-block-ip.schema.ts  # Zod IP 차단 생성 스키마
+   │     │  └─ ... (block-hp, block-word 동일 패턴)
+   │     ├─ types/
+   │     │  ├─ block-ip.type.ts           # BlockIp, SecurityPageInfo, CheckBlockedResponse, CRUD 타입
+   │     │  ├─ block-hp.type.ts           # BlockHp, CheckBlockHpRequest, CRUD 타입
+   │     │  └─ block-word.type.ts         # BlockWord, MatchType, CheckBlockWordRequest, CRUD 타입
+   │     └─ ui/                  # 도메인 UI 컴포넌트 (15개: 각 타입 × 5)
+   │        ├─ block-ip-table/            # IP 차단 목록 테이블
+   │        ├─ block-ip-detail/           # IP 차단 상세 보기
+   │        ├─ block-ip-create-form/      # IP 차단 생성 폼 (Segmented 단건/대량)
+   │        ├─ block-ip-edit-form/        # IP 차단 수정 폼
+   │        ├─ block-ip-check/            # IP 차단 여부 확인
+   │        ├─ block-hp-table/            # 휴대폰 차단 목록 테이블
+   │        ├─ block-hp-check/            # 휴대폰 차단 여부 확인
+   │        ├─ block-word-table/          # 금칙어 목록 테이블 (matchType Tag)
+   │        ├─ block-word-check/          # 금칙어 차단 여부 확인 (matchedWord 표시)
+   │        └─ ... (detail, create-form, edit-form 동일 패턴)
+   │
    └─ pages/                     # 라우트 단위 페이지 컴포넌트
       ├─ login/
       │  ├─ login-page.tsx       # 로그인 페이지 (이미 로그인 시 대시보드 리다이렉트)
@@ -456,6 +486,12 @@ flowdesk-admin-frontend/
       └─ website-manage/
          ├─ website-manage-page.tsx         # 웹사이트 관리 페이지 (검색/필터 + 테이블 + CRUD 모달)
          └─ website-manage-page.module.css
+      └─ block-manage/
+         ├─ block-manage-page.tsx           # 차단 관리 페이지 (Tabs: IP/휴대폰/금칙어)
+         ├─ block-manage-page.module.css
+         ├─ block-ip-panel.tsx              # IP 차단 탭 패널 (CRUD + 차단 여부 확인)
+         ├─ block-hp-panel.tsx              # 휴대폰 차단 탭 패널
+         └─ block-word-panel.tsx            # 금칙어 탭 패널 (matchType 필터 추가)
 ```
 
 ## 폴더/파일 구조 규칙 및 사용 가이드
@@ -572,6 +608,7 @@ features/{도메인명}/
 | `/roles` | `RoleManagePage` | `MainLayout` | **필요** | 역할 관리 (CRUD, 권한 매핑, 사용자 할당) |
 | `/tenants/status` | `TenantStatusManagePage` | `MainLayout` | **필요** | 상태 관리 (CRUD, 그룹별 Collapse, 요약 카드, 활성화/비활성화) |
 | `/websites` | `WebsiteManagePage` | `MainLayout` | **필요** | 웹사이트 관리 (CRUD, 검색/필터, 상태 변경, 썸네일, URL 링크) |
+| `/security` | `BlockManagePage` | `MainLayout` | **필요** | 차단 관리 (IP/휴대폰/금칙어 탭, CRUD, 대량 등록, 차단 여부 확인) |
 
 ## 구현 현황
 
@@ -610,6 +647,7 @@ features/{도메인명}/
 | API 상수 관리 | ✅ 완료 | 엔드포인트 경로 상수 파일 분리 |
 | 상태 관리 | ✅ 완료 | 테넌트 상태 CRUD, 그룹별 Collapse, 요약 카드, Ant Design ColorPicker, Dropdown 액션 메뉴, 활성화/비활성화 |
 | 웹사이트 관리 | ✅ 완료 | 웹사이트 CRUD, 검색/필터, 상태 변경(활성/비활성), 삭제, 관리자 배정(Select), 썸네일/URL 표시, 중복허용 기간 설정 |
+| 차단 관리 | ✅ 완료 | IP/휴대폰/금칙어 3도메인 Tabs UI, CRUD, 대량 등록(Segmented 단건/대량), 차단 여부 확인, matchType 필터/Tag, 활성화/비활성화 토글 |
 | 대시보드 | 🔧 스캐폴드 | 테넌트 대시보드 기본 플레이스홀더 구현 |
 
 ## 배포

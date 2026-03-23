@@ -1,0 +1,33 @@
+.statsBar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 16px;
+  font-size: 14px;
+  color: var(--color-text-secondary);
+}
+
+.statItem {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.statLabel {
+  color: var(--color-text-secondary);
+}
+
+.statValue {
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.statValueActive {
+  font-weight: 600;
+  color: #52c41a;
+}
+
+.statValueInactive {
+  font-weight: 600;
+  color: #ff4d4f;
+}

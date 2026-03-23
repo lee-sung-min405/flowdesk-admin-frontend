@@ -1,0 +1,23 @@
+.container {
+  width: 100%;
+}
+
+.description {
+  color: var(--color-text-secondary);
+  font-size: 14px;
+  margin-bottom: 20px;
+}
+
+.inputRow {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.inputRow > :first-child {
+  flex: 1;
+}
+
+.resultArea {
+  margin-top: 4px;
+}
