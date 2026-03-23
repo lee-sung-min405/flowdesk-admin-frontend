@@ -2,57 +2,65 @@
 
 ## 목차
 
-- [1. 아키텍처 개요](#1-아키텍처-개요)
-  - [1.1 Feature-Sliced Design (FSD)](#11-feature-sliced-design-fsd)
-  - [1.2 레이어 의존성 규칙](#12-레이어-의존성-규칙)
-- [2. 앱 초기화 흐름](#2-앱-초기화-흐름)
-  - [2.1 엔트리포인트](#21-엔트리포인트)
-  - [2.2 Provider 구조](#22-provider-구조)
-  - [2.3 라우팅](#23-라우팅)
-  - [2.4 메인 레이아웃 구조](#24-메인-레이아웃-구조)
-  - [2.5 권한 기반 동적 메뉴](#25-권한-기반-동적-메뉴)
-- [3. 인증 아키텍처](#3-인증-아키텍처)
-  - [3.1 로그인 플로우](#31-로그인-플로우)
-  - [3.2 토큰 관리](#32-토큰-관리)
-  - [3.3 자동 토큰 갱신 (Silent Refresh)](#33-자동-토큰-갱신-silent-refresh)
-  - [3.4 보호된 라우트 (Route Guard)](#34-보호된-라우트-route-guard)
-  - [3.5 인증 관련 타입](#35-인증-관련-타입)
-  - [3.6 회원가입 플로우](#36-회원가입-플로우)
-  - [3.7 인증 Feature Slice 구조](#37-인증-feature-slice-구조)
-- [4. 상태 관리 전략](#4-상태-관리-전략)
-  - [4.1 서버 상태 — TanStack React Query](#41-서버-상태--tanstack-react-query)
-  - [4.2 클라이언트 상태 — Zustand](#42-클라이언트-상태--zustand)
-  - [4.3 영속 상태 — localStorage](#43-영속-상태--localstorage)
-  - [4.4 폼 상태 — React Hook Form + Zod](#44-폼-상태--react-hook-form--zod)
-- [5. API 통신 계층](#5-api-통신-계층)
-  - [5.1 Axios 인스턴스](#51-axios-인스턴스)
-  - [5.2 요청 인터셉터](#52-요청-인터셉터)
-  - [5.3 응답 인터셉터](#53-응답-인터셉터)
-  - [5.4 에러 처리](#54-에러-처리)
-  - [5.5 API 엔드포인트 관리](#55-api-엔드포인트-관리)
-- [6. UI / 스타일링 전략](#6-ui--스타일링-전략)
-  - [6.1 컴포넌트 라이브러리](#61-컴포넌트-라이브러리)
-  - [6.2 스타일링 방식](#62-스타일링-방식)
-  - [6.3 반응형 디자인](#63-반응형-디자인)
-  - [6.4 디자인 토큰](#64-디자인-토큰)
-- [7. 빌드 및 개발 환경](#7-빌드-및-개발-환경)
-  - [7.1 Vite 설정](#71-vite-설정)
-  - [7.2 TypeScript 설정](#72-typescript-설정)
-  - [7.3 코드 품질 도구](#73-코드-품질-도구)
-  - [7.4 테스트 환경](#74-테스트-환경)
-- [8. 배포](#8-배포)
-- [9. 파일 네이밍 규칙](#9-파일-네이밍-규칙)
-- [10. 새 기능 추가 가이드](#10-새-기능-추가-가이드)
-- [11. 구현된 Feature Slice 상세](#11-구현된-feature-slice-상세)
-  - [11.1 사용자 관리 Feature](#111-사용자-관리-feature-featuresuser)
-  - [11.2 역할 관리 Feature](#112-역할-관리-feature-featuresrole)
-  - [11.3 슈퍼 관리자 대시보드 Feature](#113-슈퍼-관리자-대시보드-feature-featuressuper-dashboard)
-  - [11.4 테넌트 관리 Feature](#114-테넌트-관리-feature-featurestenant)
-  - [11.5 페이지 관리 Feature](#115-페이지-관리-feature-featuresadmin-page)
-  - [11.6 액션 관리 Feature](#116-액션-관리-feature-featuresadmin-action)
-  - [11.7 권한 관리 Feature](#117-권한-관리-feature-featuresadmin-permission)
-  - [11.8 권한 카탈로그 Feature](#118-권한-카탈로그-feature-featurespermission-catalog)
-  - [11.9 테넌트 상태 관리 Feature](#119-테넌트-상태-관리-feature-featurestenant-status)
+- [Flowdesk Admin Frontend — 아키텍처 문서](#flowdesk-admin-frontend--아키텍처-문서)
+  - [목차](#목차)
+  - [1. 아키텍처 개요](#1-아키텍처-개요)
+    - [1.1 Feature-Sliced Design (FSD)](#11-feature-sliced-design-fsd)
+    - [1.2 레이어 의존성 규칙](#12-레이어-의존성-규칙)
+  - [2. 앱 초기화 흐름](#2-앱-초기화-흐름)
+    - [2.1 엔트리포인트](#21-엔트리포인트)
+    - [2.2 Provider 구조](#22-provider-구조)
+    - [2.3 라우팅](#23-라우팅)
+    - [2.4 메인 레이아웃 구조](#24-메인-레이아웃-구조)
+    - [2.5 권한 기반 동적 메뉴](#25-권한-기반-동적-메뉴)
+  - [3. 인증 아키텍처](#3-인증-아키텍처)
+    - [3.1 로그인 플로우](#31-로그인-플로우)
+    - [3.2 토큰 관리](#32-토큰-관리)
+    - [3.3 자동 토큰 갱신 (Silent Refresh)](#33-자동-토큰-갱신-silent-refresh)
+    - [3.4 보호된 라우트 (Route Guard)](#34-보호된-라우트-route-guard)
+    - [3.5 인증 관련 타입](#35-인증-관련-타입)
+    - [3.6 회원가입 플로우](#36-회원가입-플로우)
+    - [3.7 인증 Feature Slice 구조](#37-인증-feature-slice-구조)
+  - [4. 상태 관리 전략](#4-상태-관리-전략)
+    - [4.1 서버 상태 — TanStack React Query](#41-서버-상태--tanstack-react-query)
+    - [4.3 영속 상태 — localStorage](#43-영속-상태--localstorage)
+    - [4.4 폼 상태 — React Hook Form + Zod](#44-폼-상태--react-hook-form--zod)
+  - [5. API 통신 계층](#5-api-통신-계층)
+    - [5.1 Axios 인스턴스](#51-axios-인스턴스)
+    - [5.2 요청 인터셉터](#52-요청-인터셉터)
+    - [5.3 응답 인터셉터](#53-응답-인터셉터)
+    - [5.4 에러 처리](#54-에러-처리)
+    - [5.5 API 엔드포인트 관리](#55-api-엔드포인트-관리)
+  - [6. UI / 스타일링 전략](#6-ui--스타일링-전략)
+    - [6.1 컴포넌트 라이브러리 및 UI 전략](#61-컴포넌트-라이브러리-및-ui-전략)
+    - [6.2 스타일링 방식](#62-스타일링-방식)
+    - [6.3 반응형 디자인](#63-반응형-디자인)
+    - [6.4 디자인 토큰 (CSS Custom Properties)](#64-디자인-토큰-css-custom-properties)
+  - [7. 빌드 및 개발 환경](#7-빌드-및-개발-환경)
+    - [7.1 Vite 설정](#71-vite-설정)
+    - [7.2 TypeScript 설정](#72-typescript-설정)
+    - [7.3 코드 품질 도구](#73-코드-품질-도구)
+    - [7.4 테스트 환경](#74-테스트-환경)
+  - [8. 배포](#8-배포)
+  - [9. 파일 네이밍 규칙](#9-파일-네이밍-규칙)
+  - [10. 새 기능 추가 가이드](#10-새-기능-추가-가이드)
+    - [Step 1: Feature Slice 생성](#step-1-feature-slice-생성)
+    - [Step 2: API 함수 작성](#step-2-api-함수-작성)
+    - [Step 3: React Query 훅 작성](#step-3-react-query-훅-작성)
+    - [Step 4: Public API 내보내기](#step-4-public-api-내보내기)
+    - [Step 5: 페이지에서 사용](#step-5-페이지에서-사용)
+    - [Step 6: 라우트 등록](#step-6-라우트-등록)
+  - [11. 구현된 Feature Slice 상세](#11-구현된-feature-slice-상세)
+    - [11.1 사용자 관리 Feature (`features/user/`)](#111-사용자-관리-feature-featuresuser)
+    - [11.2 역할 관리 Feature (`features/role/`)](#112-역할-관리-feature-featuresrole)
+    - [11.3 슈퍼 관리자 대시보드 Feature (`features/super-dashboard/`)](#113-슈퍼-관리자-대시보드-feature-featuressuper-dashboard)
+    - [11.4 테넌트 관리 Feature (`features/tenant/`)](#114-테넌트-관리-feature-featurestenant)
+    - [11.5 페이지 관리 Feature (`features/admin-page/`)](#115-페이지-관리-feature-featuresadmin-page)
+    - [11.6 액션 관리 Feature (`features/admin-action/`)](#116-액션-관리-feature-featuresadmin-action)
+    - [11.7 권한 관리 Feature (`features/admin-permission/`)](#117-권한-관리-feature-featuresadmin-permission)
+    - [11.8 권한 카탈로그 Feature (`features/permission-catalog/`)](#118-권한-카탈로그-feature-featurespermission-catalog)
+    - [11.9 테넌트 상태 관리 Feature (`features/tenant-status/`)](#119-테넌트-상태-관리-feature-featurestenant-status)
+    - [11.10 웹사이트 관리 Feature (`features/website/`)](#1110-웹사이트-관리-feature-featureswebsite)
 
 ---
 
@@ -166,6 +174,7 @@ const AdminPermissionManagePage = lazy(() => import('@pages/admin-permission-man
 const PermissionCatalogPage = lazy(() => import('@pages/permission-catalog/permission-catalog-page'));
 const RoleManagePage = lazy(() => import('@pages/role-manage/role-manage-page'));
 const TenantStatusManagePage = lazy(() => import('@pages/tenant-status-manage/tenant-status-manage-page'));
+const WebsiteManagePage = lazy(() => import('@pages/website-manage/website-manage-page'));
 
 <Suspense fallback={<Spin />}>
   <Routes>
@@ -185,6 +194,7 @@ const TenantStatusManagePage = lazy(() => import('@pages/tenant-status-manage/te
       <Route path="/permissions/catalog" element={<PermissionCatalogPage />} />
       <Route path="/roles" element={<RoleManagePage />} />
       <Route path="/tenants/status" element={<TenantStatusManagePage />} />
+      <Route path="/websites" element={<WebsiteManagePage />} />
     </Route>
 
     <Route path="/" element={<Navigate to="/login" />} />
@@ -218,6 +228,8 @@ const TenantStatusManagePage = lazy(() => import('@pages/tenant-status-manage/te
 | `/permissions/admin/permissions` | `AdminPermissionManagePage` | `MainLayout` | `ProtectedRoute` | RBAC 권한 관리 (페이지+액션 조합, 상세 보기) |
 | `/permissions/catalog` | `PermissionCatalogPage` | `MainLayout` | `ProtectedRoute` | 권한 카탈로그 (트리 구조 페이지×액션 매트릭스) |
 | `/roles` | `RoleManagePage` | `MainLayout` | `ProtectedRoute` | 역할 관리 (CRUD, 권한 매핑, 사용자 할당) |
+| `/tenants/status` | `TenantStatusManagePage` | `MainLayout` | `ProtectedRoute` | 상태 관리 (CRUD, 그룹별 Collapse, 요약 카드) |
+| `/websites` | `WebsiteManagePage` | `MainLayout` | `ProtectedRoute` | 웹사이트 관리 (CRUD, 상태 변경, 썸네일/URL) |
 
 ### 2.4 메인 레이아웃 구조
 
@@ -2211,3 +2223,88 @@ interface GetTenantStatusesResponse {
 - 확인 다이얼로그: 활성화/비활성화, 삭제 `Modal.confirm()` 패턴
 
 > **설계 의도**: 상태 관리는 테넌트 도메인의 하위 도메인이지만, 테넌트 feature와는 별도의 `tenant-status` 슬라이스로 분리합니다. 상태 값은 그룹(statusGroup)으로 묶여 표시되며, 폼에서 기존 그룹 자동완성(Select mode="tags")과 Ant Design ColorPicker를 통해 색상 코드를 할당합니다.
+
+### 11.10 웹사이트 관리 Feature (`features/website/`)
+
+```
+features/website/
+├─ index.ts                          # Public API (UI 4개, 훅 6개, 스키마 2개, 타입 노출)
+├─ api/
+│  ├─ website.endpoint.ts            # WEBSITE_ENDPOINTS 상수 (LIST, CREATE, DETAIL, UPDATE, DELETE, STATUS)
+│  ├─ get-websites.api.ts            # GET /websites (페이지네이션 목록 조회)
+│  ├─ get-website.api.ts             # GET /websites/{webCode} (상세 조회)
+│  ├─ create-website.api.ts          # POST /websites (생성)
+│  ├─ update-website.api.ts          # PATCH /websites/{webCode} (수정)
+│  ├─ delete-website.api.ts          # DELETE /websites/{webCode} (삭제)
+│  └─ update-website-status.api.ts   # PATCH /websites/{webCode}/status (활성화/비활성화)
+├─ model/
+│  ├─ use-websites.ts                # useWebsites() 목록 조회 훅 (useQuery)
+│  ├─ use-website.ts                 # useWebsite() 상세 조회 훅 (useQuery, enabled: !!webCode)
+│  ├─ use-create-website.ts          # useCreateWebsite() 뮤테이션 훅
+│  ├─ use-update-website.ts          # useUpdateWebsite() 뮤테이션 훅
+│  ├─ use-delete-website.ts          # useDeleteWebsite() 뮤테이션 훅
+│  ├─ use-update-website-status.ts   # useUpdateWebsiteStatus() 뮤테이션 훅
+│  ├─ create-website.schema.ts       # Zod 생성 스키마 (webCode 대문자+숫자+하이픈 정규식, URL 검증, 길이 제한)
+│  └─ update-website.schema.ts       # Zod 수정 스키마 (webCode 제외한 수정 가능 필드)
+├─ types/
+│  └─ website.type.ts                # Website 엔티티, CRUD Request/Response 타입
+└─ ui/
+   ├─ website-table/                 # 웹사이트 목록 테이블 (통계 바, 썸네일, URL 링크, Dropdown 액션 메뉴)
+   ├─ website-detail/                # 웹사이트 상세 보기 (이미지 프리뷰, Descriptions, URL 링크)
+   ├─ website-create-form/           # 웹사이트 생성 폼 (관리자 Select, URL 검증, 중복허용 기간)
+   └─ website-edit-form/             # 웹사이트 수정 폼 (기본정보/상세정보 섹션 분리)
+```
+
+**도메인 엔티티:**
+
+```typescript
+interface Website {
+  webCode: string;              // PK — 웹사이트 고유 코드 (대문자+숫자+하이픈)
+  userSeq: number;              // 관리자 사용자 시퀀스
+  userName: string;             // 관리자 이름 (서버 JOIN 응답)
+  webUrl: string;               // 웹사이트 URL
+  webTitle: string;             // 웹사이트 제목
+  webImg: string;               // 웹사이트 이미지 URL
+  webDesc: string;              // 웹사이트 설명
+  webMemo: string;              // 관리자 메모
+  isActive: number;             // 활성 상태 (0: 비활성, 1: 활성)
+  duplicateAllowAfterDays: number; // 중복 허용 기간 (일)
+  tenantId: number;             // 테넌트 ID (서버 자동 설정)
+  createdAt: string;            // 생성일
+  updatedAt: string;            // 수정일
+}
+```
+
+**API 엔드포인트:**
+
+| 메서드 | 경로 | 권한 | 설명 |
+|-------|------|------|------|
+| GET | `/websites` | `websites.read` | 목록 조회 (q, isActive 필터, sort/order 정렬, 페이지네이션) |
+| GET | `/websites/{webCode}` | `websites.read` | 상세 조회 |
+| POST | `/websites` | `websites.create` | 생성 (tenant_id + web_code 유니크) |
+| PATCH | `/websites/{webCode}` | `websites.update` | 수정 (webCode 제외 필드) |
+| DELETE | `/websites/{webCode}` | `websites.delete` | 삭제 (복구 불가) |
+| PATCH | `/websites/{webCode}/status` | `websites.update` | 활성화/비활성화 토글 |
+
+**UI 컴포넌트:**
+
+| 컴포넌트 | 주요 기능 |
+|---------|---------|
+| **WebsiteTable** | 통계 바(총/활성/비활성), Ant Design Table, 썸네일 이미지, URL 외부 링크(LinkOutlined), webCode `<code>` 스타일, 담당자 컬럼, Dropdown MoreOutlined 액션 메뉴 |
+| **WebsiteDetail** | 이미지 프리뷰, Descriptions (코드/상태/제목/URL/관리자/중복허용/설명/메모/생성일/수정일), Badge 상태 |
+| **WebsiteCreateForm** | React Hook Form + Zod, webCode(정규식), 제목, URL(url 검증), 관리자 Select(useUsers), 이미지URL, 설명/메모 TextArea, 중복허용 InputNumber |
+| **WebsiteEditForm** | 기본정보/상세정보 섹션 Divider 분리, 관리자 Select(검색 가능, showSearch), webCode 수정 불가 |
+
+**크로스 피처 의존성:**
+- `features/website/ui` → `type { User } from '@features/user'` (관리자 Select 옵션 타입)
+- 페이지 레이어(`pages/website-manage`)에서 `useUsers()` 훅으로 사용자 목록을 조회하여 폼 컴포넌트에 props로 전달 (enabled: 모달 오픈 시에만)
+
+**웹사이트 관리 페이지 (`pages/website-manage/website-manage-page.tsx`):**
+- 라우트: `/websites`
+- 페이지 헤더: 제목 "웹사이트 관리" + totalBadge + "웹사이트 추가" 버튼
+- 필터: 검색 Input(제목, URL, 코드) + 상태 Select(전체/활성/비활성)
+- 테이블: WebsiteTable (정렬, 페이지네이션, Dropdown 액션 메뉴)
+- 모달: 상세 보기(600px), 생성(560px), 수정(560px)
+- 확인 다이얼로그: 활성화/비활성화, 삭제 `Modal.confirm()` 패턴
+
+> **설계 의도**: 웹사이트는 테넌트 격리된 독립 도메인으로, `features/website` 슬라이스로 분리합니다. webCode를 기본키(PK)로 사용하여 숫자 ID 대신 사람이 읽을 수 있는 코드 체계를 적용합니다. 관리자(userSeq)는 사용자 목록에서 Select로 선택하며, 페이지 레이어에서 크로스 피처 합성합니다.
