@@ -1,0 +1,92 @@
+.page {
+  max-width: 1400px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* ── 헤더 ── */
+.pageHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.pageHeaderLeft {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.pageTitle {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--color-text);
+  margin: 0;
+}
+
+.pageDesc {
+  font-size: 14px;
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+
+/* ── 카드 공통 ── */
+.card {
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid var(--color-border);
+  padding: 24px;
+}
+
+/* ── 필터 바 ── */
+.filterBar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.searchInput {
+  width: 320px;
+}
+
+.filterSelect {
+  min-width: 160px;
+}
+
+.filterSelectSmall {
+  min-width: 110px;
+}
+
+.totalLabel {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  margin-left: auto;
+}
+
+/* ── 섹션 헤더 ── */
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.sectionTitle {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--color-text);
+  margin: 0;
+}
+
+/* ── 로딩 ── */
+.loadingContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 200px;
+}

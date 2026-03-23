@@ -336,19 +336,57 @@ flowdesk-admin-frontend/
    │  │        ├─ tenant-stats-table.tsx      # 테넌트별 14개 컬럼 상세 통계 테이블
    │  │        └─ tenant-stats-table.module.css
    │  │
-   │  └─ permission-catalog/     # 권한 카탈로그 도메인
-   │     ├─ index.ts             # Public API (PermissionMatrix, usePermissionCatalog, 타입 노출)
+   │  ├─ permission-catalog/     # 권한 카탈로그 도메인
+   │  │  ├─ index.ts             # Public API (PermissionMatrix, usePermissionCatalog, 타입 노출)
+   │  │  ├─ api/
+   │  │  │  ├─ permission-catalog.endpoint.ts  # PERMISSION_CATALOG_ENDPOINTS 상수
+   │  │  │  └─ get-permission-catalog.api.ts   # GET /permissions/catalog
+   │  │  ├─ model/
+   │  │  │  └─ use-permission-catalog.ts       # usePermissionCatalog() 카탈로그 조회 훅 (useQuery)
+   │  │  ├─ types/
+   │  │  │  └─ permission-catalog.type.ts      # CatalogPage, CatalogAction, CatalogPermission, MatrixEntry, GetPermissionCatalogResponse 타입
+   │  │  └─ ui/
+   │  │     └─ permission-matrix/
+   │  │        ├─ permission-matrix.tsx        # 트리 구조 권한 매트릭스 (접기/펼치기, 검색, 요약 바)
+   │  │        └─ permission-matrix.module.css
+   │  │
+   │  └─ tenant-status/           # 테넌트 상태 관리 도메인
+   │     ├─ index.ts             # Public API (UI 5개, 훅 6개, 스키마 2개, 타입 노출)
    │     ├─ api/
-   │     │  ├─ permission-catalog.endpoint.ts  # PERMISSION_CATALOG_ENDPOINTS 상수
-   │     │  └─ get-permission-catalog.api.ts   # GET /permissions/catalog
+   │     │  ├─ tenant-status.endpoint.ts      # TENANT_STATUS_ENDPOINTS 상수
+   │     │  ├─ get-tenant-statuses.api.ts     # GET /tenants/status (목록 조회)
+   │     │  ├─ get-tenant-status.api.ts       # GET /tenants/status/{id} (상세 조회)
+   │     │  ├─ create-tenant-status.api.ts    # POST /tenants/status (생성)
+   │     │  ├─ update-tenant-status.api.ts    # PATCH /tenants/status/{id} (수정)
+   │     │  ├─ delete-tenant-status.api.ts    # DELETE /tenants/status/{id} (삭제)
+   │     │  └─ update-tenant-status-active.api.ts  # PATCH /tenants/status/{id}/active (활성화/비활성화)
    │     ├─ model/
-   │     │  └─ use-permission-catalog.ts       # usePermissionCatalog() 카탈로그 조회 훅 (useQuery)
+   │     │  ├─ use-tenant-statuses.ts         # useTenantStatuses() 목록 조회 훅 (useQuery)
+   │     │  ├─ use-tenant-status.ts           # useTenantStatus() 상세 조회 훅 (useQuery)
+   │     │  ├─ use-create-tenant-status.ts    # useCreateTenantStatus() 뮤테이션 훅
+   │     │  ├─ use-update-tenant-status.ts    # useUpdateTenantStatus() 뮤테이션 훅
+   │     │  ├─ use-delete-tenant-status.ts    # useDeleteTenantStatus() 뮤테이션 훅
+   │     │  ├─ use-update-tenant-status-active.ts  # useUpdateTenantStatusActive() 뮤테이션 훅
+   │     │  ├─ create-tenant-status.schema.ts # Zod 상태 생성 스키마
+   │     │  └─ update-tenant-status.schema.ts # Zod 상태 수정 스키마
    │     ├─ types/
-   │     │  └─ permission-catalog.type.ts      # CatalogPage, CatalogAction, CatalogPermission, MatrixEntry, GetPermissionCatalogResponse 타입
+   │     │  └─ tenant-status.type.ts          # TenantStatus, TenantStatusGroup, CRUD Request/Response 타입
    │     └─ ui/
-   │        └─ permission-matrix/
-   │           ├─ permission-matrix.tsx        # 트리 구조 권한 매트릭스 (접기/펼치기, 검색, 요약 바)
-   │           └─ permission-matrix.module.css
+   │        ├─ status-summary-cards/
+   │        │  ├─ status-summary-cards.tsx    # 요약 카드 (전체 그룹, 전체 상태, 활성, 비활성)
+   │        │  └─ status-summary-cards.module.css
+   │        ├─ status-group-list/
+   │        │  ├─ status-group-list.tsx        # 그룹별 Collapse + 상태 테이블 (Dropdown 액션 메뉴)
+   │        │  └─ status-group-list.module.css
+   │        ├─ status-detail/
+   │        │  ├─ status-detail.tsx            # 상태 상세 보기 (Descriptions)
+   │        │  └─ status-detail.module.css
+   │        ├─ status-create-form/
+   │        │  ├─ status-create-form.tsx       # 상태 생성 폼 (그룹 자동완성, Ant Design ColorPicker)
+   │        │  └─ status-create-form.module.css
+   │        └─ status-edit-form/
+   │           ├─ status-edit-form.tsx         # 상태 수정 폼 (Ant Design ColorPicker)
+   │           └─ status-edit-form.module.css
    │
    └─ pages/                     # 라우트 단위 페이지 컴포넌트
       ├─ login/
@@ -372,11 +410,14 @@ flowdesk-admin-frontend/
       │  ├─ super-dashboard-page.tsx       # 슈퍼 관리자 대시보드 (전체 시스템 현황)
       │  └─ super-dashboard-page.module.css
       ├─ permission-catalog/
-         ├─ permission-catalog-page.tsx    # 권한 카탈로그 (트리 기반 매트릭스 + 검색)
-         └─ permission-catalog-page.module.css
-      └─ role-manage/
-         ├─ role-manage-page.tsx           # 역할 관리 페이지 (CRUD, 권한 매핑, 사용자 할당)
-         └─ role-manage-page.module.css
+      │  ├─ permission-catalog-page.tsx    # 권한 카탈로그 (트리 기반 매트릭스 + 검색)
+      │  └─ permission-catalog-page.module.css
+      ├─ role-manage/
+      │  ├─ role-manage-page.tsx           # 역할 관리 페이지 (CRUD, 권한 매핑, 사용자 할당)
+      │  └─ role-manage-page.module.css
+      └─ tenant-status-manage/
+         ├─ tenant-status-manage-page.tsx  # 상태 관리 페이지 (CRUD, 그룹별 Collapse, 요약 카드, 활성화/비활성화)
+         └─ tenant-status-manage-page.module.css
 ```
 
 ## 폴더/파일 구조 규칙 및 사용 가이드
@@ -491,6 +532,7 @@ features/{도메인명}/
 | `/permissions/admin/permissions` | `AdminPermissionManagePage` | `MainLayout` | **필요** | RBAC 권한 관리 (페이지+액션 조합, 크로스 피처) |
 | `/permissions/catalog` | `PermissionCatalogPage` | `MainLayout` | **필요** | 권한 카탈로그 (트리 구조 페이지×액션 매트릭스, 검색, 접기/펼치기) |
 | `/roles` | `RoleManagePage` | `MainLayout` | **필요** | 역할 관리 (CRUD, 권한 매핑, 사용자 할당) |
+| `/tenants/status` | `TenantStatusManagePage` | `MainLayout` | **필요** | 상태 관리 (CRUD, 그룹별 Collapse, 요약 카드, 활성화/비활성화) |
 
 ## 구현 현황
 
@@ -527,6 +569,7 @@ features/{도메인명}/
 | 반응형 디자인 | ✅ 완료 | 모바일 대응 (768px 브레이크포인트) |
 | Path Alias | ✅ 완료 | @app, @shared, @features, @pages, @widgets |
 | API 상수 관리 | ✅ 완료 | 엔드포인트 경로 상수 파일 분리 |
+| 상태 관리 | ✅ 완료 | 테넌트 상태 CRUD, 그룹별 Collapse, 요약 카드, Ant Design ColorPicker, Dropdown 액션 메뉴, 활성화/비활성화 |
 | 대시보드 | 🔧 스캐폴드 | 테넌트 대시보드 기본 플레이스홀더 구현 |
 
 ## 배포

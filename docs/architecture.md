@@ -52,6 +52,7 @@
   - [11.6 액션 관리 Feature](#116-액션-관리-feature-featuresadmin-action)
   - [11.7 권한 관리 Feature](#117-권한-관리-feature-featuresadmin-permission)
   - [11.8 권한 카탈로그 Feature](#118-권한-카탈로그-feature-featurespermission-catalog)
+  - [11.9 테넌트 상태 관리 Feature](#119-테넌트-상태-관리-feature-featurestenant-status)
 
 ---
 
@@ -164,6 +165,7 @@ const AdminActionManagePage = lazy(() => import('@pages/admin-action-manage/admi
 const AdminPermissionManagePage = lazy(() => import('@pages/admin-permission-manage/admin-permission-manage-page'));
 const PermissionCatalogPage = lazy(() => import('@pages/permission-catalog/permission-catalog-page'));
 const RoleManagePage = lazy(() => import('@pages/role-manage/role-manage-page'));
+const TenantStatusManagePage = lazy(() => import('@pages/tenant-status-manage/tenant-status-manage-page'));
 
 <Suspense fallback={<Spin />}>
   <Routes>
@@ -182,6 +184,7 @@ const RoleManagePage = lazy(() => import('@pages/role-manage/role-manage-page'))
       <Route path="/permissions/admin/permissions" element={<AdminPermissionManagePage />} />
       <Route path="/permissions/catalog" element={<PermissionCatalogPage />} />
       <Route path="/roles" element={<RoleManagePage />} />
+      <Route path="/tenants/status" element={<TenantStatusManagePage />} />
     </Route>
 
     <Route path="/" element={<Navigate to="/login" />} />
@@ -2104,3 +2107,107 @@ interface GetPermissionCatalogResponse {
 - 읽기 전용 페이지로 CRUD 없음, 단일 API 호출(`GET /permissions/catalog`)
 
 > **설계 의도**: 권한 카탈로그는 RBAC 관리(페이지/액션/권한) 3 feature와 별도의 읽기 전용 슬라이스로 분리합니다. 복잡한 매트릭스 데이터를 하나의 API에서 받아 프론트엔드에서 트리 변환/플래트닝/필터링을 수행하며, 관리자가 전체 권한 구조를 한눈에 파악할 수 있도록 합니다.
+
+### 11.9 테넌트 상태 관리 Feature (`features/tenant-status/`)
+
+테넌트에서 사용되는 커스텀 상태 값(statusGroup/statusKey)을 CRUD로 관리합니다. 상태는 그룹별로 묶여 표시되며, 각 상태에 색상 코드를 할당할 수 있습니다.
+
+**Feature Slice 구조:**
+
+```
+features/tenant-status/
+├─ index.ts                                 # Public API (UI 5개, 훅 6개, 스키마 2개, 타입)
+├─ api/
+│  ├─ tenant-status.endpoint.ts              # TENANT_STATUS_ENDPOINTS 상수 (LIST, CREATE, DETAIL, UPDATE, DELETE, ACTIVE)
+│  ├─ get-tenant-statuses.api.ts              # GET /tenants/status (목록 조회, 그룹별)
+│  ├─ get-tenant-status.api.ts                # GET /tenants/status/{id} (상세 조회)
+│  ├─ create-tenant-status.api.ts             # POST /tenants/status (생성)
+│  ├─ update-tenant-status.api.ts             # PATCH /tenants/status/{id} (수정)
+│  ├─ delete-tenant-status.api.ts             # DELETE /tenants/status/{id} (삭제)
+│  └─ update-tenant-status-active.api.ts      # PATCH /tenants/status/{id}/active (활성화/비활성화)
+├─ model/
+│  ├─ use-tenant-statuses.ts                  # useQuery — 목록 조회 (queryKey: ['tenant-statuses', params])
+│  ├─ use-tenant-status.ts                    # useQuery — 상세 조회 (queryKey: ['tenant-status', id], enabled: id > 0)
+│  ├─ use-create-tenant-status.ts             # useMutation — 생성, invalidates ['tenant-statuses']
+│  ├─ use-update-tenant-status.ts             # useMutation({id, data}) — 수정, invalidates ['tenant-statuses'] + ['tenant-status']
+│  ├─ use-delete-tenant-status.ts             # useMutation(number) — 삭제, invalidates ['tenant-statuses']
+│  ├─ use-update-tenant-status-active.ts      # useMutation({id, data}) — 활성화 토글, invalidates ['tenant-statuses'] + ['tenant-status']
+│  ├─ create-tenant-status.schema.ts          # Zod — statusGroup(필수), statusKey(regex), statusName(필수), description(선택), color(hex regex), sortOrder(선택)
+│  └─ update-tenant-status.schema.ts          # Zod — statusName(필수), description(선택), color(hex regex), sortOrder(선택)
+├─ types/
+│  └─ tenant-status.type.ts                   # TenantStatus, TenantStatusGroup, CRUD Request/Response 타입
+└─ ui/
+   ├─ status-summary-cards/
+   │  ├─ status-summary-cards.tsx             # 요약 카드 4개 (전체 그룹, 전체 상태, 활성, 비활성)
+   │  └─ status-summary-cards.module.css
+   ├─ status-group-list/
+   │  ├─ status-group-list.tsx                # Collapse 그룹 + 커스텀 table + Dropdown 액션 메뉴 (MoreOutlined)
+   │  └─ status-group-list.module.css
+   ├─ status-detail/
+   │  ├─ status-detail.tsx                    # 상세 보기 (Descriptions + 색상 swatch + Badge)
+   │  └─ status-detail.module.css
+   ├─ status-create-form/
+   │  ├─ status-create-form.tsx               # 생성 폼 (React Hook Form + Zod, 그룹 자동완성 Select, Ant Design ColorPicker)
+   │  └─ status-create-form.module.css
+   └─ status-edit-form/
+      ├─ status-edit-form.tsx                  # 수정 폼 (React Hook Form + Zod, Ant Design ColorPicker)
+      └─ status-edit-form.module.css
+```
+
+**주요 타입:**
+
+```typescript
+// 테넌트 커스텀 상태 엔티티
+interface TenantStatus {
+  tenantStatusId: number;
+  statusGroup: string;       // 상태 그룹 (COUNSEL_STATUS 등)
+  statusKey: string;         // 고유 키 (status_pending 등)
+  statusName: string;        // 표시 이름 (접수대기 등)
+  description: string;       // 설명
+  color: string;             // 색상 코드 (#RRGGBB)
+  sortOrder: number;         // 정렬 순서
+  isActive: number;          // 활성 여부 (0 | 1)
+  createdAt: string;
+  updatedAt: string;
+}
+
+// 상태 그룹 (그룹핑된 응답 단위)
+interface TenantStatusGroup {
+  statusGroup: string;
+  count: number;
+  items: TenantStatus[];
+}
+
+// 목록 조회 요청
+interface GetTenantStatusesRequest {
+  statusGroup?: string;
+  isActive?: 0 | 1;
+  q?: string;
+}
+
+// 목록 조회 응답 (그룹별 배열 + 전체 count)
+interface GetTenantStatusesResponse {
+  groups: TenantStatusGroup[];
+  total: number;
+}
+```
+
+**StatusGroupList 컴포넌트 핵심 기능:**
+
+| 기능 | 구현 방식 |
+|------|--------|
+| **그룹별 Collapse** | Ant Design Collapse — statusGroup별 패널, 기본 모두 펼침 |
+| **커스텀 테이블** | 순수 HTML `<table>` — 색상 swatch, Badge, code 스타일 |
+| **액션 메뉴** | Dropdown + MoreOutlined — 상세, 수정, 활성화/비활성화, 삭제 |
+| **색상 표시** | 16px 정사각형 swatch border-radius: 4px + 1px rgba border |
+
+**상태 관리 페이지 (`pages/tenant-status-manage/tenant-status-manage-page.tsx`):**
+- 라우트: `/tenants/status`
+- 페이지 헤더: 제목 "상태 관리" + "상태 추가" 버튼
+- 요약 카드: 전체 그룹, 전체 상태, 활성 상태, 비활성 상태 (4개 카드)
+- 필터: 검색 Input + 그룹 Select + 활성/비활성 Select + 전체 count
+- 그룹 목록: Collapse + 커스텀 table + Dropdown 액션 메뉴 + 새로고침 버튼
+- 모달: 상세 보기(560px), 수정(520px), 생성(520px)
+- 확인 다이얼로그: 활성화/비활성화, 삭제 `Modal.confirm()` 패턴
+
+> **설계 의도**: 상태 관리는 테넌트 도메인의 하위 도메인이지만, 테넌트 feature와는 별도의 `tenant-status` 슬라이스로 분리합니다. 상태 값은 그룹(statusGroup)으로 묶여 표시되며, 폼에서 기존 그룹 자동완성(Select mode="tags")과 Ant Design ColorPicker를 통해 색상 코드를 할당합니다.

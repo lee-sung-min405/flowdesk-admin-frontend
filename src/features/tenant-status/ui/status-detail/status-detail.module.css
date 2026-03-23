@@ -1,0 +1,39 @@
+.loadingContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 200px;
+}
+
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.codeName {
+  font-size: 12px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: var(--color-bg, #f5f5f5);
+  color: var(--color-text-secondary);
+}
+
+.emptyValue {
+  color: #d9d9d9;
+}
+
+.colorCell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.colorSwatch {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  flex-shrink: 0;
+}
