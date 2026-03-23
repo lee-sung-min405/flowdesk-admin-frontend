@@ -1,0 +1,15 @@
+.titleCell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.titleText {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.emptyValue {
+  color: var(--color-text-tertiary);
+}

@@ -1,0 +1,29 @@
+.formContainer {
+  width: 100%;
+}
+
+.description {
+  color: var(--color-text-secondary);
+  font-size: 14px;
+  margin-bottom: 20px;
+}
+
+.dateRow {
+  display: flex;
+  gap: 16px;
+}
+
+.dateItem {
+  flex: 1;
+}
+
+.errorAlert {
+  margin-bottom: 16px;
+}
+
+.buttonGroup {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 8px;
+}

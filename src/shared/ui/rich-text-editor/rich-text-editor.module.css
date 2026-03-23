@@ -1,0 +1,26 @@
+.editorWrapper {
+  width: 100%;
+}
+
+.editorWrapper :global(.ql-toolbar.ql-snow) {
+  border-radius: 8px 8px 0 0;
+  border-color: var(--color-border);
+  background: var(--color-bg-elevated);
+}
+
+.editorWrapper :global(.ql-container.ql-snow) {
+  border-radius: 0 0 8px 8px;
+  border-color: var(--color-border);
+  font-size: 14px;
+  min-height: 200px;
+}
+
+.editorWrapper :global(.ql-editor) {
+  min-height: 200px;
+  line-height: 1.7;
+}
+
+.editorWrapper :global(.ql-editor.ql-blank::before) {
+  color: var(--color-text-tertiary);
+  font-style: normal;
+}
