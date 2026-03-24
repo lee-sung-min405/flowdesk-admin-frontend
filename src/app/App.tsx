@@ -22,6 +22,8 @@ const WebsiteManagePage = lazy(() => import('@pages/website-manage/website-manag
 const BlockManagePage = lazy(() => import('@pages/block-manage/block-manage-page'));
 const BoardTypeManagePage = lazy(() => import('@pages/board-type-manage/board-type-manage-page'));
 const BoardManagePage = lazy(() => import('@pages/board-manage/board-manage-page'));
+const CounselDashboardPage = lazy(() => import('@pages/counsel-dashboard/counsel-dashboard-page'));
+const CounselManagePage = lazy(() => import('@pages/counsel-manage/counsel-manage-page'));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -60,6 +62,8 @@ export default function App() {
               <Route path="/security" element={<BlockManagePage />} />
               <Route path="/board-types" element={<BoardTypeManagePage />} />
               <Route path="/boards" element={<BoardManagePage />} />
+              <Route path="/counsels/dashboard" element={<CounselDashboardPage />} />
+              <Route path="/counsels" element={<CounselManagePage />} />
             </Route>
 
             <Route path="/" element={<Navigate to="/login" />} />

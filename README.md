@@ -103,7 +103,7 @@ flowdesk-admin-frontend/
 ├─ vite-env.d.ts                 # Vite 환경 타입 정의
 ├─ vercel.json                   # Vercel SPA 라우팅 리라이트 설정
 ├─ docs/                         # 프로젝트 문서
-│  └─ architecture.md            # 아키텍처 상세 문서
+│  ├─ architecture.md            # 아키텍처 상세 문서
 ├─ public/                       # 정적 파일 (favicon 등)
 │
 └─ src/
@@ -423,6 +423,41 @@ flowdesk-admin-frontend/
    │           ├─ website-edit-form.tsx       # 웹사이트 수정 폼 (기본정보/상세정보 섹션 분리)
    │           └─ website-edit-form.module.css
    │
+   │  ├─ counsel/                 # 상담 관리 도메인
+   │  │  ├─ index.ts             # Public API (UI 10개, 훅 7개, 스키마 2개, 타입 노출)
+   │  │  ├─ api/                 # API 호출 함수
+   │  │  │  ├─ counsel.endpoint.ts       # COUNSEL_ENDPOINTS 상수
+   │  │  │  ├─ get-counsel-dashboard.api.ts  # GET /counsels/dashboard
+   │  │  │  ├─ get-counsels.api.ts       # GET /counsels (목록 조회)
+   │  │  │  ├─ get-counsel.api.ts        # GET /counsels/{id} (상세 조회)
+   │  │  │  ├─ update-counsel.api.ts     # PATCH /counsels/{id} (수정)
+   │  │  │  ├─ delete-counsel.api.ts     # DELETE /counsels/{id} (삭제)
+   │  │  │  ├─ update-counsel-status.api.ts  # PATCH /counsels/{id}/status (상태 변경)
+   │  │  │  └─ create-counsel-memo.api.ts   # POST /counsels/{id}/memo (메모 작성)
+   │  │  ├─ model/               # 커스텀 훅, Zod 스키마
+   │  │  │  ├─ use-counsel-dashboard.ts  # useCounselDashboard() 대시보드 통계 훅
+   │  │  │  ├─ use-counsels.ts           # useCounsels() 목록 조회 훅
+   │  │  │  ├─ use-counsel.ts            # useCounsel() 상세 조회 훅
+   │  │  │  ├─ use-update-counsel.ts     # useUpdateCounsel() 뮤테이션 훅
+   │  │  │  ├─ use-delete-counsel.ts     # useDeleteCounsel() 뮤테이션 훅
+   │  │  │  ├─ use-update-counsel-status.ts  # useUpdateCounselStatus() 뮤테이션 훅
+   │  │  │  ├─ use-create-counsel-memo.ts   # useCreateCounselMemo() 뮤테이션 훅
+   │  │  │  ├─ update-counsel.schema.ts  # Zod 상담 수정 스키마
+   │  │  │  └─ create-memo.schema.ts     # Zod 메모 생성 스키마
+   │  │  ├─ types/
+   │  │  │  └─ counsel.type.ts           # CounselListItem, CounselDetail, Dashboard 관련 타입
+   │  │  └─ ui/                  # 도메인 UI 컴포넌트 (10개)
+   │  │     ├─ summary-cards/            # 대시보드 요약 카드 (4지표)
+   │  │     ├─ status-distribution-chart/ # 상태별 분포 파이차트
+   │  │     ├─ employee-stats-chart/      # 담당자별 현황 바차트
+   │  │     ├─ daily-trends-chart/        # 일별 상담 추이 영역차트
+   │  │     ├─ top-websites-chart/        # 웹사이트별 Top 5 바차트
+   │  │     ├─ hourly-distribution-chart/ # 시간대별 분포 바차트
+   │  │     ├─ upcoming-reservations-table/ # 예정 예약 테이블
+   │  │     ├─ counsel-table/             # 상담 목록 테이블 (인라인 상태/담당자 변경)
+   │  │     ├─ counsel-detail/            # 상담 상세 (4탭, 메모, 이력, 차단)
+   │  │     └─ counsel-edit-form/         # 상담 수정 폼 (React Hook Form + Zod)
+   │  │
    │  └─ security/                # 보안(차단) 관리 도메인
    │     ├─ index.ts             # Public API (UI 15개, 훅 21개, 스키마 9개, 타입 노출)
    │     ├─ api/                 # API 호출 함수 (21개: IP/HP/Word × 7 엔드포인트)
@@ -486,12 +521,18 @@ flowdesk-admin-frontend/
       └─ website-manage/
          ├─ website-manage-page.tsx         # 웹사이트 관리 페이지 (검색/필터 + 테이블 + CRUD 모달)
          └─ website-manage-page.module.css
-      └─ block-manage/
-         ├─ block-manage-page.tsx           # 차단 관리 페이지 (Tabs: IP/휴대폰/금칙어)
-         ├─ block-manage-page.module.css
-         ├─ block-ip-panel.tsx              # IP 차단 탭 패널 (CRUD + 차단 여부 확인)
-         ├─ block-hp-panel.tsx              # 휴대폰 차단 탭 패널
-         └─ block-word-panel.tsx            # 금칙어 탭 패널 (matchType 필터 추가)
+      ├─ block-manage/
+      │  ├─ block-manage-page.tsx           # 차단 관리 페이지 (Tabs: IP/휴대폰/금칙어)
+      │  ├─ block-manage-page.module.css
+      │  ├─ block-ip-panel.tsx              # IP 차단 탭 패널 (CRUD + 차단 여부 확인)
+      │  ├─ block-hp-panel.tsx              # 휴대폰 차단 탭 패널
+      │  └─ block-word-panel.tsx            # 금칙어 탭 패널 (matchType 필터 추가)
+      ├─ counsel-dashboard/
+      │  ├─ counsel-dashboard-page.tsx      # 상담 대시보드 (7개 통계 위젯, 기간 선택)
+      │  └─ counsel-dashboard-page.module.css
+      └─ counsel-manage/
+         ├─ counsel-manage-page.tsx         # 상담 관리 (상태 카드, 필터, 테이블, 일괄 처리)
+         └─ counsel-manage-page.module.css
 ```
 
 ## 폴더/파일 구조 규칙 및 사용 가이드
@@ -609,6 +650,8 @@ features/{도메인명}/
 | `/tenants/status` | `TenantStatusManagePage` | `MainLayout` | **필요** | 상태 관리 (CRUD, 그룹별 Collapse, 요약 카드, 활성화/비활성화) |
 | `/websites` | `WebsiteManagePage` | `MainLayout` | **필요** | 웹사이트 관리 (CRUD, 검색/필터, 상태 변경, 썸네일, URL 링크) |
 | `/security` | `BlockManagePage` | `MainLayout` | **필요** | 차단 관리 (IP/휴대폰/금칙어 탭, CRUD, 대량 등록, 차단 여부 확인) |
+| `/counsels/dashboard` | `CounselDashboardPage` | `MainLayout` | **필요** | 상담 대시보드 (7개 통계 위젯, 기간 선택, 새로고침) |
+| `/counsels` | `CounselManagePage` | `MainLayout` | **필요** | 상담 관리 (상태 필터 카드, 목록, 상세/수정, 일괄 처리) |
 
 ## 구현 현황
 
@@ -648,6 +691,8 @@ features/{도메인명}/
 | 상태 관리 | ✅ 완료 | 테넌트 상태 CRUD, 그룹별 Collapse, 요약 카드, Ant Design ColorPicker, Dropdown 액션 메뉴, 활성화/비활성화 |
 | 웹사이트 관리 | ✅ 완료 | 웹사이트 CRUD, 검색/필터, 상태 변경(활성/비활성), 삭제, 관리자 배정(Select), 썸네일/URL 표시, 중복허용 기간 설정 |
 | 차단 관리 | ✅ 완료 | IP/휴대폰/금칙어 3도메인 Tabs UI, CRUD, 대량 등록(Segmented 단건/대량), 차단 여부 확인, matchType 필터/Tag, 활성화/비활성화 토글 |
+| 상담 대시보드 | ✅ 완료 | 요약 카드(4지표), 상태별 분포(파이), 담당자별 현황(바), 일별 추이(영역), 웹사이트 Top5(바), 시간대별 분포(바), 예정 예약 테이블, 기간 선택(RangePicker) |
+| 상담 관리 | ✅ 완료 | 상태 필터 카드, 날짜/상태/담당자/웹사이트 필터, 인라인 상태/담당자 변경, 상세 모달(4탭: 기본정보/메모/이력/관련상담), 수정, 메모, 차단(전화번호/IP/금칙어), 일괄 처리(상태 변경/담당자 배정/삭제), `counsels.admin` 권한 기반 데이터 격리 |
 | 대시보드 | 🔧 스캐폴드 | 테넌트 대시보드 기본 플레이스홀더 구현 |
 
 ## 배포

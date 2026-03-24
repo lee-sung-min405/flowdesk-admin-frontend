@@ -14,6 +14,10 @@ import {
   LayoutOutlined,
   ContainerOutlined,
   ReadOutlined,
+  CustomerServiceOutlined,
+  DashboardOutlined,
+  UnorderedListOutlined,
+  CalendarOutlined,
 } from '@ant-design/icons';
 
 /**
@@ -45,4 +49,10 @@ export const menuIconMap: Record<string, React.ReactNode> = {
   // 콘텐츠 관리
   'content_management': <ContainerOutlined />,
   'boards.posts': <ReadOutlined />,
+
+  // 상담 관리
+  'counsel_management': <CustomerServiceOutlined />,
+  'counsels.dashboard': <DashboardOutlined />,
+  'counsels': <UnorderedListOutlined />,
+  'counsels.calendar': <CalendarOutlined />,
 };

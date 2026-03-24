@@ -62,6 +62,11 @@
     - [11.9 테넌트 상태 관리 Feature (`features/tenant-status/`)](#119-테넌트-상태-관리-feature-featurestenant-status)
     - [11.10 웹사이트 관리 Feature (`features/website/`)](#1110-웹사이트-관리-feature-featureswebsite)
     - [11.11 보안(차단) 관리 Feature (`features/security/`)](#1111-보안차단-관리-feature-featuressecurity)
+    - [11.12 상담 관리 Feature (`features/counsel/`)](#1112-상담-관리-feature-featurescounsel)
+      - [도메인 엔티티](#도메인-엔티티)
+      - [API 엔드포인트](#api-엔드포인트)
+      - [UI 컴포넌트](#ui-컴포넌트)
+      - [페이지 구성](#페이지-구성)
 
 ---
 
@@ -2511,3 +2516,135 @@ pages/block-manage/
 - 확인 다이얼로그: 활성화/비활성화, 삭제 `Modal.confirm()` 패턴
 
 > **설계 의도**: 보안(차단) 관리는 IP, 휴대폰, 금칙어 3가지 차단 도메인을 하나의 `features/security` 슬라이스로 통합합니다. 3개 도메인이 동일한 CRUD + Check 패턴을 공유하므로 하나의 feature slice로 관리하는 것이 응집도 측면에서 유리합니다. 페이지 레이어에서는 `Tabs` 컴포넌트로 3개 도메인을 탭 패널로 분리하되, 각 패널을 별도 컴포넌트로 추출하여 파일 크기와 유지보수성을 확보합니다. 대량 등록은 `Segmented` 컴포넌트로 단건/대량 모드를 토글하여 UX를 개선합니다. 보안 API는 `currentPage`/`pageSize` 필드명을 사용하므로 `SecurityPageInfo` 타입으로 별도 정의합니다.
+
+---
+
+### 11.12 상담 관리 Feature (`features/counsel/`)
+
+```
+features/counsel/
+├─ index.ts                          # Public API — UI 10개, 훅 7개, 스키마 2개, 타입 노출
+├─ api/
+│  ├─ counsel.endpoint.ts            # COUNSEL_ENDPOINTS 상수 (8 키)
+│  ├─ get-counsel-dashboard.api.ts   # GET  /counsels/dashboard (통계)
+│  ├─ get-counsels.api.ts            # GET  /counsels (페이지네이션 목록)
+│  ├─ get-counsel.api.ts             # GET  /counsels/{id} (상세 — 이력/메모 포함)
+│  ├─ update-counsel.api.ts          # PATCH /counsels/{id} (수정)
+│  ├─ delete-counsel.api.ts          # DELETE /counsels/{id} (삭제)
+│  ├─ update-counsel-status.api.ts   # PATCH /counsels/{id}/status (상태 변경)
+│  └─ create-counsel-memo.api.ts     # POST  /counsels/{id}/memo (메모 작성)
+├─ model/
+│  ├─ use-counsel-dashboard.ts       # useCounselDashboard() — 대시보드 통계 Query
+│  ├─ use-counsels.ts                # useCounsels() — 목록 조회 Query (queryKey: ['counsels', params])
+│  ├─ use-counsel.ts                 # useCounsel() — 상세 조회 Query (enabled: !!id)
+│  ├─ use-update-counsel.ts          # useUpdateCounsel() — 수정 Mutation
+│  ├─ use-delete-counsel.ts          # useDeleteCounsel() — 삭제 Mutation
+│  ├─ use-update-counsel-status.ts   # useUpdateCounselStatus() — 상태 변경 Mutation
+│  ├─ use-create-counsel-memo.ts     # useCreateCounselMemo() — 메모 작성 Mutation
+│  ├─ update-counsel.schema.ts       # Zod 상담 수정 스키마
+│  └─ create-memo.schema.ts          # Zod 메모 생성 스키마
+├─ types/
+│  └─ counsel.type.ts                # 도메인 타입 전체 (25+ 인터페이스)
+└─ ui/
+   ├─ summary-cards/                 # 대시보드 요약 카드 (총 상담, 신규, 완료, 완료율 Progress)
+   ├─ status-distribution-chart/     # 상태별 분포 도넛 PieChart + 커스텀 범례
+   ├─ employee-stats-chart/          # 담당자별 현황 BarChart (opacity 그라데이션)
+   ├─ daily-trends-chart/            # 일별 상담 추이 AreaChart (합계/일 평균 칩)
+   ├─ top-websites-chart/            # 웹사이트별 Top 5 수평 BarChart
+   ├─ hourly-distribution-chart/     # 시간대별 분포 BarChart (피크 하이라이트 + 평균선)
+   ├─ upcoming-reservations-table/   # 예정 예약 테이블 (상대 시간 Tag)
+   ├─ counsel-table/                 # 상담 목록 테이블 (인라인 상태/담당자 변경)
+   ├─ counsel-detail/                # 상담 상세 (4탭: 기본정보/메모/이력/관련상담)
+   └─ counsel-edit-form/             # 상담 수정 폼 (React Hook Form + Zod)
+```
+
+#### 도메인 엔티티
+
+```typescript
+// 상담 목록 아이템 — 테이블/카드에 표시
+interface CounselListItem {
+  counselSeq: number;          // PK
+  webCode: string;             // 웹사이트 코드
+  webTitle: string | null;     // 웹사이트 제목
+  name: string | null;         // 고객명
+  counselHp: string;           // 전화번호
+  counselStat: number;         // 상태 코드
+  statusName: string | null;   // 상태 라벨 (DB RGB 색상)
+  empSeq: number | null;       // 담당자 PK
+  empName: string | null;      // 담당자명
+  duplicateState: string;      // 중복 여부 ('Y'/'N')
+  counselResvDtm: string | null; // 예약 일시 (SCHEDULED 상태)
+  regDtm: string;              // 등록 일시
+  editDtm: string;             // 수정 일시
+  fieldValues: CounselFieldValueResponse[];  // 동적 필드 배열
+}
+
+// 상담 상세 — CounselListItem 확장
+interface CounselDetail extends CounselListItem {
+  counselIp: string;           // IP 주소
+  counselSource: string | null;  // UTM source
+  counselMedium: string | null;  // UTM medium
+  counselCampaign: string | null; // UTM campaign
+  counselMemo: string | null;    // 메모 텍스트
+  logs: CounselLog[];           // 상태 변경 이력
+  memos: CounselMemo[];         // 메모 목록
+}
+
+// 대시보드 응답
+interface CounselDashboardResponse {
+  summary: CounselDashboardSummary;          // 요약 (총/신규/완료/완료율)
+  statusDistribution: StatusDistributionItem[];  // 상태별 분포 (color: DB RGB)
+  employeeStats: EmployeeStatsItem[];        // 담당자별 현황
+  dailyTrends: DailyTrendItem[];             // 일별 추이
+  topWebsites: WebsiteStatsItem[];           // 웹사이트 Top N
+  hourlyDistribution: HourlyDistributionItem[]; // 시간대별 분포
+  upcomingReservations: UpcomingReservationItem[]; // 예정 예약
+}
+```
+
+#### API 엔드포인트
+
+| 키 | 메서드 | 경로 | 설명 |
+|---|---|---|---|
+| `DASHBOARD` | GET | `/counsels/dashboard` | 대시보드 통계 전체 |
+| `LIST` | GET | `/counsels` | 목록 조회 (페이지네이션, 필터) |
+| `DETAIL` | GET | `/counsels/{id}` | 상세 조회 (이력+메모 포함) |
+| `UPDATE` | PATCH | `/counsels/{id}` | 수정 (이름, 전화, 담당자, UTM, 메모 등) |
+| `DELETE` | DELETE | `/counsels/{id}` | 삭제 |
+| `STATUS` | PATCH | `/counsels/{id}/status` | 상태 변경 (counselStat + 선택적 counselResvDtm) |
+| `LOGS` | GET | `/counsels/{id}/logs` | 상태 변경 이력 조회 |
+| `MEMO` | POST | `/counsels/{id}/memo` | 메모 작성 |
+
+#### UI 컴포넌트
+
+| 컴포넌트 | 차트 라이브러리 | 설명 |
+|---|---|---|
+| `SummaryCards` | — | 4개 지표 카드 (총 상담, 신규, 완료, 완료율 Progress 링) |
+| `StatusDistributionChart` | Recharts PieChart | 도넛 차트 + 커스텀 범례 (DB RGB 색상) |
+| `EmployeeStatsChart` | Recharts BarChart | 담당자별 수직 바 (count 기반 opacity 그라데이션) |
+| `DailyTrendsChart` | Recharts AreaChart | 일별 추이 영역 차트 + 합계/일 평균 칩 |
+| `TopWebsitesChart` | Recharts BarChart | 웹사이트 Top 5 수평 바 |
+| `HourlyDistributionChart` | Recharts BarChart | 24시간 분포 + 피크 하이라이트 + 평균 ReferenceLine |
+| `UpcomingReservationsTable` | Ant Design Table | 예정 예약 (상대 시간 태그, D-day 색상) |
+| `CounselTable` | Ant Design Table | 목록 테이블, 인라인 Status/Assignee Select, 행 선택, 복사, 액션 드롭다운 |
+| `CounselDetail` | — | 4탭 상세 모달 (기본정보, 메모, 이력, 관련상담), 고정 헤더 + 스크롤 탭, 차단 기능 |
+| `CounselEditForm` | — | React Hook Form + Zod, 섹션별 폼 (기본정보, UTM, 메모) |
+
+#### 페이지 구성
+
+```
+pages/counsel-dashboard/
+├─ counsel-dashboard-page.tsx        # 대시보드 (RangePicker + 날짜 프리셋 + 새로고침)
+└─ counsel-dashboard-page.module.css # 2열 그리드 차트 레이아웃
+
+pages/counsel-manage/
+├─ counsel-manage-page.tsx           # 상담 관리 (필터 카드 + 테이블 + 모달 + 일괄 처리 바)
+└─ counsel-manage-page.module.css    # 필터 카드, 일괄 처리 바 슬라이드 업 애니메이션
+```
+
+- 라우트: `/counsels/dashboard` (대시보드), `/counsels` (관리)
+- **대시보드 페이지**: RangePicker 기간 선택 + 날짜 프리셋 (오늘/7일/30일/90일), 새로고침 버튼, SummaryCards, 2열 그리드 차트 6종, UpcomingReservationsTable
+- **관리 페이지**: 상태 필터 카드 5종 (NEW/DUPLICATE/IN_PROGRESS/SCHEDULED/CONTACTED), 빠른 날짜 필터 (오늘/이번 주), 필터 바 (상태/담당자/웹사이트/검색), CounselTable (인라인 상태 Select + admin 전용 담당자 Select), 상세/수정 모달, 일괄 처리 바 (상태 변경/담당자 배정·미배정/삭제)
+- **권한 기반 데이터 격리**: `permissions['counsels.admin']`으로 admin 여부 판별, admin만 담당자 목록 로딩 (`useUsers({ enabled: isAdmin })`), 인라인 담당자 변경, 일괄 담당자 배정 가능
+
+> **설계 의도**: 상담 관리는 대시보드(통계)와 관리(CRUD) 두 페이지로 분리하되, 단일 `features/counsel` 슬라이스에서 API/모델/UI를 모두 제공합니다. 대시보드 차트 6종은 Recharts 라이브러리로 통일하고, 각 차트를 독립 컴포넌트로 분리하여 렌더링 격리와 재사용성을 확보합니다. 목록 테이블에서 인라인 상태/담당자 Select를 지원하여 상세 모달 진입 없이 빠른 상태 전환이 가능하며, `counsels.admin` 권한에 따라 담당자 관련 기능을 조건부로 활성화합니다. 일괄 처리 바는 행 선택 시 하단에 슬라이드 업 애니메이션으로 표시되며, 상태 변경·담당자 배정(미배정 포함)·삭제를 지원합니다. SCHEDULED 상태 선택 시 예약 일시 입력 모달이 추가로 표시됩니다.

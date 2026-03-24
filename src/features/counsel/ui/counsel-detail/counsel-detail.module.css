@@ -1,0 +1,283 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+.fixedSection {
+  flex-shrink: 0;
+}
+
+.scrollSection {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.loadingContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 200px;
+}
+
+/* ── Header ── */
+.header {
+  margin-bottom: 16px;
+}
+
+.headerTitle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.headerName {
+  font-size: 22px;
+  font-weight: 700;
+  margin: 0;
+  color: var(--color-text);
+}
+
+.headerStatusTag {
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 4px;
+}
+
+/* ── Info Grid ── */
+.infoGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px 32px;
+  margin-bottom: 12px;
+}
+
+.infoItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--color-text);
+}
+
+.infoIcon {
+  color: var(--color-text-secondary);
+  font-size: 15px;
+}
+
+/* ── Date Row ── */
+.dateRow {
+  display: flex;
+  gap: 24px;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--color-border);
+  margin-bottom: 16px;
+}
+
+.dateItem {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* ── Action Bar ── */
+.actionBar {
+  display: flex;
+  align-items: flex-end;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--color-border);
+  margin-bottom: 4px;
+}
+
+.actionGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.actionLabel {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  font-weight: 500;
+}
+
+.statusSelect {
+  min-width: 140px;
+}
+
+.statusDot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 6px;
+}
+
+.assigneeSelect {
+  min-width: 140px;
+}
+
+.blockBtnGroup {
+  display: flex;
+  gap: 4px;
+}
+
+/* ── Tab Content ── */
+.tabContent {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* ── Section Title ── */
+.sectionTitle {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--color-text);
+  margin: 16px 0 8px;
+}
+
+.sectionTitle:first-child {
+  margin-top: 0;
+}
+
+/* ── Form Fields ── */
+.formField {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 12px;
+}
+
+.fieldLabel {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+/* ── Save Row ── */
+.saveRow {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 12px;
+}
+
+/* ── Empty State ── */
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  text-align: center;
+}
+
+.emptyTitle {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  margin: 0 0 4px;
+}
+
+.emptyDesc {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  opacity: 0.7;
+  margin: 0;
+}
+
+/* ── Memo Tab ── */
+.memoTab {
+  display: flex;
+  flex-direction: column;
+  min-height: 300px;
+}
+
+.memoList {
+  flex: 1;
+  overflow-y: auto;
+  max-height: 320px;
+  padding: 4px 0;
+}
+
+.memoItem {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 14px;
+  border-radius: 8px;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+}
+
+.memoItem + .memoItem {
+  margin-top: 8px;
+}
+
+.memoMeta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+
+.memoAuthor {
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.memoStatusTag {
+  font-size: 11px;
+}
+
+.memoDate {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+
+.memoText {
+  font-size: 14px;
+  color: var(--color-text);
+  white-space: pre-wrap;
+  word-break: break-word;
+  line-height: 1.5;
+}
+
+/* ── Memo Input ── */
+.memoInput {
+  border-top: 1px solid var(--color-border);
+  padding-top: 12px;
+  margin-top: 12px;
+}
+
+.memoInputFooter {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.memoSubmitBtn {
+  margin-left: auto;
+}
+
+/* ── Logs ── */
+.logEntry {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.logDate {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
