@@ -7,7 +7,7 @@ import MainLayout from './layouts/main-layout';
 
 const LoginPage = lazy(() => import('@pages/login/login-page'));
 const SignupPage = lazy(() => import('@pages/signup/signup-page'));
-const DashboardPage = lazy(() => import('@pages/dashboard/dashboard-page'));
+const HomePage = lazy(() => import('@pages/home/home-page'));
 const MypagePage = lazy(() => import('@pages/mypage/mypage-page'));
 const UserPage = lazy(() => import('@pages/user/user-page'));
 const TenantPage = lazy(() => import('@pages/tenant/tenant-page'));
@@ -48,7 +48,7 @@ export default function App() {
 
             {/* 인증 필요 + MainLayout 적용 라우트 */}
             <Route element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
-              <Route path="/dashboard" element={<DashboardPage />} />
+              <Route path="/home" element={<HomePage />} />
               <Route path="/mypage" element={<MypagePage />} />
               <Route path="/users" element={<UserPage />} />
               <Route path="/tenants" element={<TenantPage />} />

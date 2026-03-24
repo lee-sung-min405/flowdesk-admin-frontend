@@ -67,6 +67,7 @@
       - [API 엔드포인트](#api-엔드포인트)
       - [UI 컴포넌트](#ui-컴포넌트)
       - [페이지 구성](#페이지-구성)
+  - [12. 홈 페이지 (`pages/home/`)](#12-홈-페이지-pageshome)
 
 ---
 
@@ -169,7 +170,7 @@ const queryClient = new QueryClient({
 // 페이지 동적 import (React.lazy)
 const LoginPage = lazy(() => import('@pages/login/login-page'));
 const SignupPage = lazy(() => import('@pages/signup/signup-page'));
-const DashboardPage = lazy(() => import('@pages/dashboard/dashboard-page'));
+const HomePage = lazy(() => import('@pages/home/home-page'));
 const MypagePage = lazy(() => import('@pages/mypage/mypage-page'));
 const UserPage = lazy(() => import('@pages/user/user-page'));
 const TenantPage = lazy(() => import('@pages/tenant/tenant-page'));
@@ -190,7 +191,7 @@ const BlockManagePage = lazy(() => import('@pages/block-manage/block-manage-page
 
     {/* 인증 필요 + MainLayout 적용 라우트 */}
     <Route element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
-      <Route path="/dashboard" element={<DashboardPage />} />
+      <Route path="/home" element={<HomePage />} />
       <Route path="/mypage" element={<MypagePage />} />
       <Route path="/users" element={<UserPage />} />
       <Route path="/tenants" element={<TenantPage />} />
@@ -224,9 +225,9 @@ const BlockManagePage = lazy(() => import('@pages/block-manage/block-manage-page
 | 경로 | 컴포넌트 | 레이아웃 | 접근 제어 | 비고 |
 |------|---------|---------|----------|------|
 | `/` | `Navigate` | — | 없음 | `/login`으로 리다이렉트 |
-| `/login` | `LoginPage` | — | 공개 | 이미 로그인 시 `/dashboard`로 리다이렉트 |
-| `/signup` | `SignupPage` | — | 공개 | 이미 로그인 시 `/dashboard`로 리다이렉트 |
-| `/dashboard` | `DashboardPage` | `MainLayout` | `ProtectedRoute` | 토큰 없으면 `/login`으로 리다이렉트 |
+| `/login` | `LoginPage` | — | 공개 | 이미 로그인 시 `/home`으로 리다이렉트 |
+| `/signup` | `SignupPage` | — | 공개 | 이미 로그인 시 `/home`으로 리다이렉트 |
+| `/home` | `HomePage` | `MainLayout` | `ProtectedRoute` | 온보딩 · 플로우 안내 · 포트폴리오 · 아키텍처 개요 |
 | `/mypage` | `MypagePage` | `MainLayout` | `ProtectedRoute` | 프로필 정보, 역할/권한, 보안 설정 |
 | `/users` | `UserPage` | `MainLayout` | `ProtectedRoute` | 사용자 관리 (CRUD, 상태 변경, 역할 설정) |
 | `/tenants` | `TenantPage` | `MainLayout` | `ProtectedRoute` | 테넌트 관리 (CRUD, 상태 변경, 삭제) |
@@ -252,7 +253,7 @@ const BlockManagePage = lazy(() => import('@pages/block-manage/block-manage-page
 │  ┌─────┐ │  Content (Outlet → 자식 페이지)            │
 │  │로고  │ │                                           │
 │  │메뉴  │ │     ┌──────────────────────────┐          │
-│  │     │ │     │  DashboardPage 등        │          │
+│  │     │ │     │  HomePage 등              │          │
 │  │유저  │ │     │  (Outlet으로 렌더링)      │          │
 │  │로그  │ │     └──────────────────────────┘          │
 │  │아웃  │ │                                           │
@@ -349,7 +350,7 @@ const BlockManagePage = lazy(() => import('@pages/block-manage/block-manage-page
                                                               │ mutateAsync     │
                                                               │ resolve → 이후  │
                                                               │ navigate(       │
-                                                              │  '/dashboard')  │
+                                                              │  '/home')       │
                                                               └─────────────────┘
 ```
 
@@ -366,7 +367,7 @@ const BlockManagePage = lazy(() => import('@pages/block-manage/block-manage-page
    - `meApi()` 호출 → 사용자 프로필, 역할, 권한, 메뉴 트리 조회
    - `authStorage.setMe()` → localStorage에 캐시
    - `useAuthStore.setMe()` → **Zustand에 me 동기화 (반응성 확보)**
-6. `mutateAsync` promise resolve 후 `/dashboard`로 네비게이션
+6. `mutateAsync` promise resolve 후 `/home`으로 네비게이션
 
 > **중요**: `mutateAsync`를 사용하여 me 데이터 저장이 완료된 후에 navigate가 실행됩니다. `mutate` + 콜백 방식에서는 me API가 완료되기 전에 navigate가 실행되어 메뉴/사용자 정보가 보이지 않는 문제가 있었습니다.
 
@@ -2655,3 +2656,54 @@ pages/counsel-calendar/
 - **권한 기반 데이터 격리**: `permissions['counsels.admin']`으로 admin 여부 판별, admin만 담당자 목록 로딩 (`useUsers({ enabled: isAdmin })`), 인라인 담당자 변경, 일괄 담당자 배정 가능
 
 > **설계 의도**: 상담 관리는 대시보드(통계)와 관리(CRUD) 두 페이지로 분리하되, 단일 `features/counsel` 슬라이스에서 API/모델/UI를 모두 제공합니다. 대시보드 차트 6종은 Recharts 라이브러리로 통일하고, 각 차트를 독립 컴포넌트로 분리하여 렌더링 격리와 재사용성을 확보합니다. 목록 테이블에서 인라인 상태/담당자 Select를 지원하여 상세 모달 진입 없이 빠른 상태 전환이 가능하며, `counsels.admin` 권한에 따라 담당자 관련 기능을 조건부로 활성화합니다. 일괄 처리 바는 행 선택 시 하단에 슬라이드 업 애니메이션으로 표시되며, 상태 변경·담당자 배정(미배정 포함)·삭제를 지원합니다. SCHEDULED 상태 선택 시 예약 일시 입력 모달이 추가로 표시됩니다.
+
+---
+
+## 12. 홈 페이지 (`pages/home/`)
+
+### 12.1 개요
+
+홈 페이지(`/home`)는 로그인 후 최초 진입 페이지로, 시스템 온보딩 · 서비스 플로우 안내 · 포트폴리오 소개 · 아키텍처 개요를 제공합니다. 기존 `DashboardPage`(빈 페이지)를 대체하여 `HomePage`로 리네이밍되었습니다.
+
+### 12.2 파일 구조
+
+```
+pages/home/
+├─ home-page.tsx              # 메인 컴포넌트 (역할별 플로우 데이터 + JSX)
+└─ home-page.module.css       # CSS Modules 스타일 (반응형 포함)
+```
+
+### 12.3 페이지 구성
+
+| 섹션 | 설명 |
+|------|------|
+| **페이지 헤더** | `HOME` 타이틀 + 안내 문구 (다른 관리 페이지와 동일한 패턴) |
+| **히어로** | 프로필 바 (아바타 · 인사말 · 사용자명 · 업체 포털명) + 4개 통계 카드 (소속 업체, 역할, 가입일, 계정 상태) |
+| **섹션 퀵 네비** | 4개 섹션 바로가기 버튼 (포트폴리오, 데이터 흐름, 역할별 플로우, 아키텍처) — `scrollIntoView` |
+| **포트폴리오 안내** | 그라디언트 배너 + CTA 버튼 (`leeseongmin.pro`) + 5개 피처 카드 그리드 |
+| **데이터 흐름** | 업체 웹사이트 → API 연동 → FlowDesk Admin 3단계 플로우 다이어그램 (웹코드 기반 상담 데이터 유입) |
+| **역할별 플로우** | 탭 UI (슈퍼 관리자 / 업체 관리자 / 일반 사용자) + 커스터마이징 안내 배너 + Phase별 스텝 카드 (클릭 시 해당 페이지로 navigate) |
+| **아키텍처** | 6개 기술 하이라이트 카드 그리드 (멀티테넌트 격리, RBAC, JWT, 동적 메뉴, FSD, 보안 3단계) |
+| **푸터** | 브랜드명 + 기술 스택 요약 + 프로젝트 설명 |
+
+### 12.4 주요 데이터 상수
+
+- **`ROLE_LANES`**: 3개 역할(슈퍼 관리자, 업체 관리자, 일반 사용자)별 Phase → Step 플로우 정의. 각 Step은 `path`, `icon`, `color`를 포함하여 클릭 시 해당 관리 페이지로 이동 가능
+- **`TECH_HIGHLIGHTS`**: 6개 아키텍처 핵심 설계 원칙 (이모지 + 라벨 + 설명)
+
+### 12.5 상태 관리
+
+| 상태 | 훅 | 용도 |
+|------|-----|------|
+| `activeLane` | `useState` | 현재 선택된 역할 탭 (super / admin / user) |
+| `me` | `useMe()` | 로그인 사용자 정보 (`user`, `roles`) |
+
+### 12.6 스타일링
+
+- **CSS Modules**: `home-page.module.css` 단일 파일에 모든 섹션 스타일 포함
+- **통합 섹션 패턴**: `.section` → `.sectionHeader` → `.sectionBody` 구조로 4개 섹션 일관 적용
+- **CSS Custom Properties**: `--color-primary`, `--color-text-secondary`, `--color-border`, `--transition-base` 활용
+- **반응형 breakpoint**: 960px (2열 → 1열 그리드), 768px (모바일 레이아웃), 576px (최소 너비 대응)
+- **히어로 통계 카드**: `[data-status='active']` / `[data-status='inactive']` 속성 선택자로 상태별 아이콘 색상 분기
+
+> **설계 의도**: 홈 페이지는 별도의 feature slice 없이 `pages/home/` 내에서 자체 완결적으로 구현됩니다. 서버 API 호출 없이 `useMe()` 훅의 기존 데이터만 활용하며, 역할별 서비스 이용 플로우를 정적 데이터(`ROLE_LANES`)로 정의하여 시스템 온보딩 가이드 역할을 합니다. 모든 역할의 플로우를 예시로 표시하되, 커스터마이징 안내 배너를 통해 실제 운영 환경에서는 권한 체계를 자유롭게 구성할 수 있음을 안내합니다.

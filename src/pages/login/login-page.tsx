@@ -11,7 +11,7 @@ export default function LoginPage() {
 	const storeToken = useAuthStore((state) => state.accessToken);
 	useEffect(() => {
 		if (storeToken || authStorage.getAccessToken()) {
-			navigate('/dashboard', { replace: true });
+			navigate('/home', { replace: true });
 		}
 	}, [navigate, storeToken]);
 	return (

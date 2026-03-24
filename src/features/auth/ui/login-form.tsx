@@ -31,7 +31,7 @@ export default function LoginForm() {
     setApiError(null);
     try {
       await loginMutation.mutateAsync(data);
-      navigate('/dashboard');
+      navigate('/home');
     } catch (error: unknown) {
       const message = getApiErrorMessage(error);
       setApiError({ message, detail: '다시 입력해주세요.' });

@@ -13,7 +13,7 @@ export default function Breadcrumb() {
   const items = [
     {
       title: (
-        <Link to="/dashboard">
+        <Link to="/home">
           <HomeOutlined />
         </Link>
       ),

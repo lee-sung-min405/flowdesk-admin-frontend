@@ -82,7 +82,7 @@ export default function Sidebar({ collapsed, onCollapse }: SidebarProps) {
       >
         {/* 로고 영역 */}
         <Tooltip title="FlowDesk Admin" placement="right" open={isCollapsed ? undefined : false}>
-          <div className={styles.logo} onClick={() => navigate('/dashboard')}>
+          <div className={styles.logo} onClick={() => navigate('/home')}>
             <div className={styles.logoIcon}>
               <BlockOutlined style={{ fontSize: 22 }} />
             </div>
