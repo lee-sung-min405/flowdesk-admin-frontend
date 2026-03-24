@@ -1,0 +1,390 @@
+/* ── 캘린더 컨테이너 ── */
+.calendarWrapper {
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid var(--color-border);
+  overflow: hidden;
+}
+
+/* ── 네비게이션 바 ── */
+.navBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.navLeft {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.navBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid var(--color-border);
+  background: #fff;
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all var(--transition-base);
+}
+
+.navBtn:hover {
+  color: var(--color-primary);
+  border-color: var(--color-primary);
+  background: rgba(35, 61, 123, 0.04);
+}
+
+.monthLabel {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--color-text);
+  min-width: 140px;
+  text-align: center;
+}
+
+.navRight {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.filterSelect {
+  min-width: 130px;
+}
+
+/* ── 범례 바 ── */
+.legendBar {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 10px 20px;
+  background: var(--color-bg);
+  border-bottom: 1px solid var(--color-border);
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+
+.legendItem {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.legendDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.legendSpacer {
+  flex: 1;
+}
+
+.monthCount {
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+/* ── 캘린더 그리드 ── */
+.calendarGrid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+}
+
+.dayHeader {
+  padding: 10px 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  text-align: center;
+  border-bottom: 1px solid var(--color-border);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.dayHeader:nth-child(1) {
+  color: #ef4444;
+}
+
+.dayHeader:nth-child(7) {
+  color: var(--color-primary);
+}
+
+/* ── 셀 ── */
+.dayCell {
+  min-height: 110px;
+  border-right: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  cursor: default;
+  transition: background var(--transition-base);
+}
+
+.dayCell:nth-child(7n) {
+  border-right: none;
+}
+
+.dayCell:hover {
+  background: rgba(0, 0, 0, 0.01);
+}
+
+.dayCellPast {
+  background: #fafafa;
+}
+
+.dayCellToday {
+  background: rgba(35, 61, 123, 0.03);
+}
+
+/* ── 날짜 숫자 ── */
+.dayNumber {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 2px 4px 4px;
+}
+
+.dayNum {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-text);
+  line-height: 1;
+}
+
+.dayCellPast .dayNum {
+  color: var(--color-text-tertiary, #9ca3af);
+}
+
+.dayNumSunday {
+  color: #ef4444;
+}
+
+.dayNumSaturday {
+  color: var(--color-primary);
+}
+
+.dayNumToday {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  color: #fff;
+  font-weight: 700;
+}
+
+.dayBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: var(--color-primary);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+/* ── 예약 카드 ── */
+.resvCard {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 4px 6px;
+  border-radius: 4px;
+  border-left: 3px solid var(--accent-color, var(--color-primary));
+  background: var(--accent-bg, rgba(35, 61, 123, 0.06));
+  cursor: pointer;
+  transition: all var(--transition-base);
+  overflow: hidden;
+}
+
+.resvCard:hover {
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+  transform: translateY(-1px);
+}
+
+.resvTime {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--accent-color, var(--color-primary));
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.resvName {
+  font-size: 11px;
+  color: var(--color-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.moreLink {
+  font-size: 10px;
+  color: var(--color-text-secondary);
+  padding: 2px 6px;
+  cursor: pointer;
+  border-radius: 3px;
+  transition: color var(--transition-base);
+}
+
+.moreLink:hover {
+  color: var(--color-primary);
+}
+
+/* ── 외부 날짜 (이전/다음 달) ── */
+.dayOtherMonth {
+  background: transparent;
+}
+
+.dayOtherMonth .dayNum {
+  color: var(--color-border);
+}
+
+/* ── 드래그 앤 드롭 ── */
+.dayCellDragOver {
+  background: rgba(35, 61, 123, 0.06) !important;
+  outline: 2px dashed var(--color-primary);
+  outline-offset: -2px;
+}
+
+.resvCard[draggable='true'] {
+  cursor: grab;
+}
+
+.resvCard[draggable='true']:active {
+  cursor: grabbing;
+}
+
+.resvCard[data-dragging='true'] {
+  opacity: 0.4;
+}
+
+/* ── 예약 변경 확인 모달 ── */
+.rescheduleModal {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 8px 0;
+}
+
+.rescheduleInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.rescheduleLabel {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.rescheduleSub {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+
+.rescheduleChange {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: var(--color-bg, #f5f5f5);
+  border-radius: 8px;
+}
+
+.rescheduleFrom,
+.rescheduleTo {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+  color: var(--color-text);
+  flex: 1;
+}
+
+.rescheduleTag {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.rescheduleArrow {
+  font-size: 18px;
+  color: var(--color-primary);
+  flex-shrink: 0;
+}
+
+.rescheduleTimePicker {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+
+/* ── 반응형 ── */
+@media (max-width: 900px) {
+  .dayCell {
+    min-height: 80px;
+    padding: 4px;
+  }
+
+  .resvCard {
+    padding: 3px 4px;
+  }
+
+  .resvName {
+    display: none;
+  }
+
+  .navRight {
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 576px) {
+  .navBar {
+    flex-direction: column;
+    gap: 10px;
+    align-items: stretch;
+  }
+
+  .navLeft {
+    justify-content: center;
+  }
+
+  .navRight {
+    justify-content: center;
+  }
+
+  .dayHeader {
+    font-size: 10px;
+  }
+
+  .dayCell {
+    min-height: 60px;
+  }
+}

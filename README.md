@@ -424,7 +424,7 @@ flowdesk-admin-frontend/
    │           └─ website-edit-form.module.css
    │
    │  ├─ counsel/                 # 상담 관리 도메인
-   │  │  ├─ index.ts             # Public API (UI 10개, 훅 7개, 스키마 2개, 타입 노출)
+   │  │  ├─ index.ts             # Public API (UI 11개, 훅 7개, 스키마 2개, 타입 노출)
    │  │  ├─ api/                 # API 호출 함수
    │  │  │  ├─ counsel.endpoint.ts       # COUNSEL_ENDPOINTS 상수
    │  │  │  ├─ get-counsel-dashboard.api.ts  # GET /counsels/dashboard
@@ -446,7 +446,7 @@ flowdesk-admin-frontend/
    │  │  │  └─ create-memo.schema.ts     # Zod 메모 생성 스키마
    │  │  ├─ types/
    │  │  │  └─ counsel.type.ts           # CounselListItem, CounselDetail, Dashboard 관련 타입
-   │  │  └─ ui/                  # 도메인 UI 컴포넌트 (10개)
+   │  │  └─ ui/                  # 도메인 UI 컴포넌트 (11개)
    │  │     ├─ summary-cards/            # 대시보드 요약 카드 (4지표)
    │  │     ├─ status-distribution-chart/ # 상태별 분포 파이차트
    │  │     ├─ employee-stats-chart/      # 담당자별 현황 바차트
@@ -454,6 +454,7 @@ flowdesk-admin-frontend/
    │  │     ├─ top-websites-chart/        # 웹사이트별 Top 5 바차트
    │  │     ├─ hourly-distribution-chart/ # 시간대별 분포 바차트
    │  │     ├─ upcoming-reservations-table/ # 예정 예약 테이블
+   │  │     ├─ reservation-calendar/       # 예약 캘린더 (월별 그리드, 드래그 앤 드롭 일정 변경, TimePicker)
    │  │     ├─ counsel-table/             # 상담 목록 테이블 (인라인 상태/담당자 변경)
    │  │     ├─ counsel-detail/            # 상담 상세 (4탭, 메모, 이력, 차단)
    │  │     └─ counsel-edit-form/         # 상담 수정 폼 (React Hook Form + Zod)
@@ -652,6 +653,7 @@ features/{도메인명}/
 | `/security` | `BlockManagePage` | `MainLayout` | **필요** | 차단 관리 (IP/휴대폰/금칙어 탭, CRUD, 대량 등록, 차단 여부 확인) |
 | `/counsels/dashboard` | `CounselDashboardPage` | `MainLayout` | **필요** | 상담 대시보드 (7개 통계 위젯, 기간 선택, 새로고침) |
 | `/counsels` | `CounselManagePage` | `MainLayout` | **필요** | 상담 관리 (상태 필터 카드, 목록, 상세/수정, 일괄 처리) |
+| `/counsels/calendar` | `CounselCalendarPage` | `MainLayout` | **필요** | 예약 캘린더 (월별 그리드, 드래그 앤 드롭 일정 변경, 상세 모달) |
 
 ## 구현 현황
 
@@ -693,6 +695,7 @@ features/{도메인명}/
 | 차단 관리 | ✅ 완료 | IP/휴대폰/금칙어 3도메인 Tabs UI, CRUD, 대량 등록(Segmented 단건/대량), 차단 여부 확인, matchType 필터/Tag, 활성화/비활성화 토글 |
 | 상담 대시보드 | ✅ 완료 | 요약 카드(4지표), 상태별 분포(파이), 담당자별 현황(바), 일별 추이(영역), 웹사이트 Top5(바), 시간대별 분포(바), 예정 예약 테이블, 기간 선택(RangePicker) |
 | 상담 관리 | ✅ 완료 | 상태 필터 카드, 날짜/상태/담당자/웹사이트 필터, 인라인 상태/담당자 변경, 상세 모달(4탭: 기본정보/메모/이력/관련상담), 수정, 메모, 차단(전화번호/IP/금칙어), 일괄 처리(상태 변경/담당자 배정/삭제), `counsels.admin` 권한 기반 데이터 격리 |
+| 예약 캘린더 | ✅ 완료 | 월별 7×6 캘린더 그리드, 예약 카드(상태별 색상), 드래그 앤 드롭 일정 변경(확인 모달 + TimePicker), 담당자 필터(어드민), 상세 모달(상담 관리와 동일) |
 | 대시보드 | 🔧 스캐폴드 | 테넌트 대시보드 기본 플레이스홀더 구현 |
 
 ## 배포

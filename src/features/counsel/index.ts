@@ -12,6 +12,9 @@ export { default as CounselTable } from './ui/counsel-table/counsel-table.tsx';
 export { default as CounselDetail } from './ui/counsel-detail/counsel-detail.tsx';
 export { default as CounselEditForm } from './ui/counsel-edit-form/counsel-edit-form.tsx';
 
+// UI - Calendar
+export { default as ReservationCalendar } from './ui/reservation-calendar/reservation-calendar.tsx';
+
 // Model - Queries
 export { useCounselDashboard } from './model/use-counsel-dashboard';
 export { useCounsels } from './model/use-counsels';

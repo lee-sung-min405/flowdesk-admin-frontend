@@ -2523,7 +2523,7 @@ pages/block-manage/
 
 ```
 features/counsel/
-├─ index.ts                          # Public API — UI 10개, 훅 7개, 스키마 2개, 타입 노출
+├─ index.ts                          # Public API — UI 11개, 훅 7개, 스키마 2개, 타입 노출
 ├─ api/
 │  ├─ counsel.endpoint.ts            # COUNSEL_ENDPOINTS 상수 (8 키)
 │  ├─ get-counsel-dashboard.api.ts   # GET  /counsels/dashboard (통계)
@@ -2553,6 +2553,7 @@ features/counsel/
    ├─ top-websites-chart/            # 웹사이트별 Top 5 수평 BarChart
    ├─ hourly-distribution-chart/     # 시간대별 분포 BarChart (피크 하이라이트 + 평균선)
    ├─ upcoming-reservations-table/   # 예정 예약 테이블 (상대 시간 Tag)
+   ├─ reservation-calendar/          # 예약 캘린더 (월별 그리드, DnD 일정 변경, TimePicker 시간 수정)
    ├─ counsel-table/                 # 상담 목록 테이블 (인라인 상태/담당자 변경)
    ├─ counsel-detail/                # 상담 상세 (4탭: 기본정보/메모/이력/관련상담)
    └─ counsel-edit-form/             # 상담 수정 폼 (React Hook Form + Zod)
@@ -2626,6 +2627,7 @@ interface CounselDashboardResponse {
 | `TopWebsitesChart` | Recharts BarChart | 웹사이트 Top 5 수평 바 |
 | `HourlyDistributionChart` | Recharts BarChart | 24시간 분포 + 피크 하이라이트 + 평균 ReferenceLine |
 | `UpcomingReservationsTable` | Ant Design Table | 예정 예약 (상대 시간 태그, D-day 색상) |
+| `ReservationCalendar` | — | 월별 7×6 캘린더 그리드, 예약 카드(상태별 accent 색상), HTML5 드래그 앤 드롭 일정 변경 + 확인 모달(TimePicker), 담당자 필터 |
 | `CounselTable` | Ant Design Table | 목록 테이블, 인라인 Status/Assignee Select, 행 선택, 복사, 액션 드롭다운 |
 | `CounselDetail` | — | 4탭 상세 모달 (기본정보, 메모, 이력, 관련상담), 고정 헤더 + 스크롤 탭, 차단 기능 |
 | `CounselEditForm` | — | React Hook Form + Zod, 섹션별 폼 (기본정보, UTM, 메모) |
@@ -2640,11 +2642,16 @@ pages/counsel-dashboard/
 pages/counsel-manage/
 ├─ counsel-manage-page.tsx           # 상담 관리 (필터 카드 + 테이블 + 모달 + 일괄 처리 바)
 └─ counsel-manage-page.module.css    # 필터 카드, 일괄 처리 바 슬라이드 업 애니메이션
+
+pages/counsel-calendar/
+├─ counsel-calendar-page.tsx         # 예약 캘린더 (ReservationCalendar + CounselDetail 모달)
+└─ counsel-calendar-page.module.css  # 캘린더 페이지 레이아웃
 ```
 
-- 라우트: `/counsels/dashboard` (대시보드), `/counsels` (관리)
+- 라우트: `/counsels/dashboard` (대시보드), `/counsels` (관리), `/counsels/calendar` (예약 캘린더)
 - **대시보드 페이지**: RangePicker 기간 선택 + 날짜 프리셋 (오늘/7일/30일/90일), 새로고침 버튼, SummaryCards, 2열 그리드 차트 6종, UpcomingReservationsTable
 - **관리 페이지**: 상태 필터 카드 5종 (NEW/DUPLICATE/IN_PROGRESS/SCHEDULED/CONTACTED), 빠른 날짜 필터 (오늘/이번 주), 필터 바 (상태/담당자/웹사이트/검색), CounselTable (인라인 상태 Select + admin 전용 담당자 Select), 상세/수정 모달, 일괄 처리 바 (상태 변경/담당자 배정·미배정/삭제)
+- **예약 캘린더 페이지**: 월별 7×6 캘린더 그리드 (ReservationCalendar), 예약 카드(상태별 accent 색상), HTML5 드래그 앤 드롭 일정 변경 + 확인 모달(TimePicker 5분 단위), 담당자 필터(admin), CounselDetail 상세 모달(상담 관리와 동일)
 - **권한 기반 데이터 격리**: `permissions['counsels.admin']`으로 admin 여부 판별, admin만 담당자 목록 로딩 (`useUsers({ enabled: isAdmin })`), 인라인 담당자 변경, 일괄 담당자 배정 가능
 
 > **설계 의도**: 상담 관리는 대시보드(통계)와 관리(CRUD) 두 페이지로 분리하되, 단일 `features/counsel` 슬라이스에서 API/모델/UI를 모두 제공합니다. 대시보드 차트 6종은 Recharts 라이브러리로 통일하고, 각 차트를 독립 컴포넌트로 분리하여 렌더링 격리와 재사용성을 확보합니다. 목록 테이블에서 인라인 상태/담당자 Select를 지원하여 상세 모달 진입 없이 빠른 상태 전환이 가능하며, `counsels.admin` 권한에 따라 담당자 관련 기능을 조건부로 활성화합니다. 일괄 처리 바는 행 선택 시 하단에 슬라이드 업 애니메이션으로 표시되며, 상태 변경·담당자 배정(미배정 포함)·삭제를 지원합니다. SCHEDULED 상태 선택 시 예약 일시 입력 모달이 추가로 표시됩니다.
