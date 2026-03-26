@@ -39,7 +39,7 @@ export default function StatusEditForm({
         data: {
           statusName: data.statusName,
           description: data.description || undefined,
-          color: data.color,
+          color: data.color.startsWith('#') ? data.color.slice(0, 7) : `#${data.color.slice(0, 6)}`,
           sortOrder: data.sortOrder,
         },
       });
@@ -99,11 +99,12 @@ export default function StatusEditForm({
           render={({ field }) => (
             <ColorPicker
               value={field.value}
-              onChange={(_, hex) => {
-                field.onChange(hex);
+              onChange={(color) => {
+                field.onChange(color.toHexString().slice(0, 7));
               }}
               showText
               format="hex"
+              disabledAlpha
             />
           )}
         />

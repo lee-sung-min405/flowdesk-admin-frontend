@@ -55,7 +55,7 @@ export default function StatusCreateForm({
         statusKey: data.statusKey,
         statusName: data.statusName,
         description: data.description || undefined,
-        color: data.color,
+        color: data.color.startsWith('#') ? data.color.slice(0, 7) : `#${data.color.slice(0, 6)}`,
         sortOrder: data.sortOrder,
       });
       onSuccess();
@@ -154,11 +154,12 @@ export default function StatusCreateForm({
           render={({ field }) => (
             <ColorPicker
               value={field.value}
-              onChange={(_, hex) => {
-                field.onChange(hex);
+              onChange={(color) => {
+                field.onChange(color.toHexString().slice(0, 7));
               }}
               showText
               format="hex"
+              disabledAlpha
             />
           )}
         />
