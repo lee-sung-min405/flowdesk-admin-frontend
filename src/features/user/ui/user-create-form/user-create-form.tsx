@@ -99,7 +99,7 @@ export default function UserCreateForm({ onSuccess, onCancel }: UserCreateFormPr
           />
         </Form.Item>
         <Form.Item
-          label="회사명"
+          label="부서명"
           required
           validateStatus={errors.corpName ? 'error' : ''}
           help={errors.corpName?.message}

@@ -83,7 +83,7 @@ export default function UserTable({
       sorter: true,
     },
     {
-      title: '회사명',
+      title: '부서명',
       dataIndex: 'corpName',
       sorter: true,
     },

@@ -35,7 +35,7 @@ export default function UserDetail({ data, loading }: UserDetailProps) {
           />
         </Descriptions.Item>
         <Descriptions.Item label="이름">{data.userName}</Descriptions.Item>
-        <Descriptions.Item label="회사명">{data.corpName}</Descriptions.Item>
+        <Descriptions.Item label="부서명">{data.corpName}</Descriptions.Item>
         <Descriptions.Item label="이메일" span={2}>
           {data.userEmail || <span className={styles.emptyValue}>—</span>}
         </Descriptions.Item>

@@ -103,7 +103,7 @@ export default function Header({ collapsed, onToggleCollapsed }: HeaderProps) {
         {/* 테넌트 뱃지 */}
         {me?.user.corpName && (
           <div className={styles.tenantBadge}>
-            {me.user.corpName}
+            {me.user.tenantName} &gt; {me.user.corpName}
           </div>
         )}
 

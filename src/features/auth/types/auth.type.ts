@@ -85,6 +85,7 @@ export interface SignupRequest {
   email: string;
   phone: string;
   password: string;
+  tenantName: string;
 }
 
 // 회원가입 응답 타입

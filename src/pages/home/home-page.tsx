@@ -221,7 +221,7 @@ export default function HomePage() {
             </div>
           </div>
           <div className={styles.heroBrand}>
-            <strong>{user?.corpName}</strong> 관리자 포털
+            <strong>{user?.tenantName}</strong> 관리자 포털
           </div>
         </div>
 
@@ -229,7 +229,7 @@ export default function HomePage() {
           <div className={styles.statCard}>
             <div className={styles.statIcon}><ApartmentOutlined /></div>
             <div className={styles.statContent}>
-              <span className={styles.statLabel}>소속 업체</span>
+              <span className={styles.statLabel}>소속 부서</span>
               <span className={styles.statValue}>{user?.corpName ?? '-'}</span>
             </div>
           </div>

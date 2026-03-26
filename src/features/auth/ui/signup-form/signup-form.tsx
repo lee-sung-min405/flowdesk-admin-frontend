@@ -31,6 +31,7 @@ export default function SignupForm() {
     defaultValues: {
       companyName: '',
       adminName: '',
+      tenantName: '',
       email: '',
       phone: '',
       password: '',
@@ -57,12 +58,21 @@ export default function SignupForm() {
 
   return (
     <Form layout="vertical" onFinish={handleSubmit(onSubmit)} className={styles.formContainer}>
+      <Form.Item validateStatus={errors.tenantName ? 'error' : ''} help={errors.tenantName?.message}>
+        <Controller
+          name="tenantName"
+          control={control}
+          render={({ field }) => (
+            <Input {...field} placeholder="업체 이름 (영어 권장)" size="large" prefix={<BankOutlined />} />
+          )}
+        />
+      </Form.Item>
       <Form.Item validateStatus={errors.companyName ? 'error' : ''} help={errors.companyName?.message}>
         <Controller
           name="companyName"
           control={control}
           render={({ field }) => (
-            <Input {...field} placeholder="회사명" size="large" prefix={<BankOutlined />} />
+            <Input {...field} placeholder="부서명" size="large" prefix={<BankOutlined />} />
           )}
         />
       </Form.Item>
@@ -80,7 +90,7 @@ export default function SignupForm() {
           name="email"
           control={control}
           render={({ field }) => (
-            <Input {...field} placeholder="이메일" size="large" prefix={<MailOutlined />} />
+            <Input {...field} placeholder="이메일(ID)" size="large" prefix={<MailOutlined />} />
           )}
         />
       </Form.Item>

@@ -11,7 +11,7 @@ export const createUserSchema = z.object({
   userId: z.string().min(1, '사용자 ID를 입력하세요'),
   password: passwordRule,
   userName: z.string().min(1, '이름을 입력하세요'),
-  corpName: z.string().min(1, '회사명을 입력하세요'),
+  corpName: z.string().min(1, '부서명을 입력하세요'),
   userEmail: z.string().min(1, '이메일을 입력하세요').email('올바른 이메일을 입력하세요'),
   userTel: z.string().optional().or(z.literal('')),
   userHp: z.string().optional().or(z.literal('')),

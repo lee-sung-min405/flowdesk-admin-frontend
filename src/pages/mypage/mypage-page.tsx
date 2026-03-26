@@ -91,7 +91,7 @@ export default function MypagePage() {
                 <div className={styles.infoValue}>{user.userEmail || '-'}</div>
               </div>
               <div className={styles.infoItem}>
-                <div className={styles.infoLabel}><BankOutlined /> 회사명</div>
+                <div className={styles.infoLabel}><BankOutlined /> 부서명</div>
                 <div className={styles.infoValue}>{user.corpName || '-'}</div>
               </div>
               <div className={styles.infoItem}>

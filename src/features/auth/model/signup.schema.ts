@@ -2,8 +2,9 @@ import { z } from 'zod';
 
 export const signupSchema = z
   .object({
-    companyName: z.string().min(1, '회사명을 입력하세요'),
+    companyName: z.string().min(1, '부서명을 입력하세요'),
     adminName: z.string().min(1, '관리자 이름을 입력하세요'),
+    tenantName: z.string().min(1, '테넌트 이름을 입력하세요'),
     email: z
       .string()
       .min(1, '이메일을 입력하세요')

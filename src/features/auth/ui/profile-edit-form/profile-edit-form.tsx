@@ -44,7 +44,7 @@ export default function ProfileEditForm({ defaultValues, onSuccess, onCancel }: 
   return (
     <Form layout="vertical" onFinish={handleSubmit(onSubmit)} className={styles.formContainer}>
       <Form.Item
-        label="회사명"
+        label="부서명"
         validateStatus={errors.corpName ? 'error' : ''}
         help={errors.corpName?.message}
       >
@@ -52,7 +52,7 @@ export default function ProfileEditForm({ defaultValues, onSuccess, onCancel }: 
           name="corpName"
           control={control}
           render={({ field }) => (
-            <Input {...field} placeholder="회사명" size="large" prefix={<BankOutlined />} />
+            <Input {...field} placeholder="부서명" size="large" prefix={<BankOutlined />} />
           )}
         />
       </Form.Item>
