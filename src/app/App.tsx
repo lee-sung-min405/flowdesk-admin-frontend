@@ -25,6 +25,7 @@ const BoardManagePage = lazy(() => import('@pages/board-manage/board-manage-page
 const CounselDashboardPage = lazy(() => import('@pages/counsel-dashboard/counsel-dashboard-page'));
 const CounselManagePage = lazy(() => import('@pages/counsel-manage/counsel-manage-page'));
 const CounselCalendarPage = lazy(() => import('@pages/counsel-calendar/counsel-calendar-page'));
+const ForbiddenPage = lazy(() => import('@pages/forbidden/forbidden-page'));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -45,6 +46,7 @@ export default function App() {
           <Routes>
             <Route path="/login" element={<LoginPage />} />
             <Route path="/signup" element={<SignupPage />} />
+            <Route path="/403" element={<ForbiddenPage />} />
 
             {/* 인증 필요 + MainLayout 적용 라우트 */}
             <Route element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
