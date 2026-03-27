@@ -27,7 +27,7 @@ export default function RoleManagePage() {
 
   const drawerOpen = detailRoleId > 0;
   const { data: catalogData, isLoading: catalogLoading } = usePermissionCatalog({ enabled: drawerOpen });
-  const { data: allRolesData } = useRoles({ isActive: 1, limit: 100 }, { enabled: drawerOpen });
+  const { data: allRolesData } = useRoles({ isActive: 1 }, { enabled: drawerOpen });
   const { data: usersData, isLoading: usersLoading } = useUsers(
     userListParams,
     { enabled: drawerOpen },

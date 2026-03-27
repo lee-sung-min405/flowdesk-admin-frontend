@@ -23,7 +23,7 @@ export default function AdminPageManagePage() {
   const [detailTarget, setDetailTarget] = useState<AdminPageListItem | null>(null);
 
   const { data, isLoading } = useAdminPages(params);
-  const { data: parentPagesData } = useAdminPages({ limit: 100 }, { enabled: createModalOpen || !!editTarget });
+  const { data: parentPagesData } = useAdminPages({}, { enabled: createModalOpen || !!editTarget });
   const { data: editPageDetail } = useAdminPage(editTarget?.pageId ?? 0);
   const { data: detailPageData, isLoading: detailLoading } = useAdminPage(detailTarget?.pageId ?? 0);
   const updateStatus = useUpdateAdminPageStatus();

@@ -31,7 +31,7 @@ export default function WebsiteManagePage() {
 
   // 관리자 목록 (생성/수정 폼의 관리자 Select용)
   const { data: usersData, isLoading: usersLoading } = useUsers(
-    { page: 1, limit: 100 },
+    {},
     { enabled: createModalOpen || !!editTarget },
   );
   const users = usersData?.items ?? [];

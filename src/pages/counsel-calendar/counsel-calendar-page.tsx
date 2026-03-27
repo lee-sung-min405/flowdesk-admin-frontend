@@ -36,8 +36,6 @@ export default function CounselCalendarPage() {
     const start = currentMonth.startOf('month');
     const end = currentMonth.endOf('month');
     return {
-      page: 1,
-      limit: 500,
       resvStartDate: start.format('YYYY-MM-DD'),
       resvEndDate: end.format('YYYY-MM-DD'),
       ...(assigneeFilter != null && { empSeq: assigneeFilter }),
@@ -50,7 +48,7 @@ export default function CounselCalendarPage() {
   const updateCounsel = useUpdateCounsel();
 
   // 담당자 목록 (어드민만 로드)
-  const { data: usersData } = useUsers({ page: 1, limit: 200 }, { enabled: isAdmin });
+  const { data: usersData } = useUsers({}, { enabled: isAdmin });
   const assigneeOptions = useMemo(
     () => usersData?.items.map((u) => ({ value: u.userSeq, label: u.userName })) ?? [],
     [usersData],

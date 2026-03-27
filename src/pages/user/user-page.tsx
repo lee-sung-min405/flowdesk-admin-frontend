@@ -26,7 +26,7 @@ export default function UserPage() {
   const [passwordTarget, setPasswordTarget] = useState<User | null>(null);
 
   const { data, isLoading } = useUsers(params);
-  const { data: rolesData } = useRoles({ isActive: 1, limit: 100 });
+  const { data: rolesData } = useRoles({ isActive: 1 });
   const { data: detailData, isLoading: detailLoading } = useUser(detailTarget?.userSeq ?? 0);
   const { data: editUserDetail } = useUser(editTarget?.userSeq ?? 0);
   const updateStatus = useUpdateUserStatus();

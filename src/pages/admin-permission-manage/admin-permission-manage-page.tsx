@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { Input, Select, Modal, message } from 'antd';
 import { SearchOutlined, ReloadOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
 import {
@@ -38,20 +38,10 @@ export default function AdminPermissionManagePage() {
   const [tableStatus, setTableStatus] = useState<number | undefined>(undefined);
 
   // Fetch pages (tree structure requires parentId, sortOrder)
-  const { data: pagesData, isLoading: pagesLoading, dataUpdatedAt: pagesUpdatedAt, refetch: refetchPages, isFetching: pagesFetching } = useAdminPages({ limit: 100, isActive: 1 });
+  const { data: pagesData, isLoading: pagesLoading, dataUpdatedAt: pagesUpdatedAt, refetch: refetchPages, isFetching: pagesFetching } = useAdminPages({ isActive: 1 });
 
-  // Fetch all permissions — auto-expand limit based on totalItems
-  const [permLimit, setPermLimit] = useState(100);
-  const { data: permData, isLoading: permLoading, dataUpdatedAt: permUpdatedAt, refetch: refetchPerms, isFetching: permFetching } = useAdminPermissions({
-    page: 1,
-    limit: permLimit,
-  });
-
-  useEffect(() => {
-    if (permData?.pageInfo && permData.pageInfo.totalItems > permLimit) {
-      setPermLimit(permData.pageInfo.totalItems);
-    }
-  }, [permData?.pageInfo?.totalItems, permLimit]);
+  // Fetch all permissions
+  const { data: permData, isLoading: permLoading, dataUpdatedAt: permUpdatedAt, refetch: refetchPerms, isFetching: permFetching } = useAdminPermissions({});
 
   // Table query (server-side pagination + filters)
   const tableQueryParams = useMemo<GetAdminPermissionsRequest>(() => ({

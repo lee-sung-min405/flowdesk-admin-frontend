@@ -54,14 +54,14 @@ export default function CounselManagePage() {
   const updateCounselStatus = useUpdateCounselStatus();
 
   // 담당자 목록 (어드민만 로드)
-  const { data: usersData } = useUsers({ page: 1, limit: 200 }, { enabled: isAdmin });
+  const { data: usersData } = useUsers({}, { enabled: isAdmin });
   const assigneeOptions = useMemo(
     () => usersData?.items.map((u) => ({ value: u.userSeq, label: u.userName })) ?? [],
     [usersData],
   );
 
   // 웹사이트 목록
-  const { data: websitesData } = useWebsites({ page: 1, limit: 200 });
+  const { data: websitesData } = useWebsites({});
   const websiteOptions = useMemo(
     () => websitesData?.items.map((w) => ({ value: w.webCode, label: w.webTitle || w.webCode })) ?? [],
     [websitesData],
