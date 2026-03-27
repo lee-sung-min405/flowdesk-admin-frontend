@@ -10,6 +10,7 @@ export function useDeleteCounsel() {
     mutationFn: deleteCounselApi,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['counsels'] });
+      queryClient.invalidateQueries({ queryKey: ['counsel-dashboard'] });
     },
   });
 }
