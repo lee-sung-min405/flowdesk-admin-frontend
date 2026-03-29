@@ -13,6 +13,7 @@ import {
 } from '@features/website';
 import type { Website, GetWebsitesRequest } from '@features/website';
 import { useUsers } from '@features/user';
+import { useMe } from '@features/auth';
 import styles from './website-manage-page.module.css';
 
 const { confirm } = Modal;
@@ -24,6 +25,10 @@ export default function WebsiteManagePage() {
   const [editTarget, setEditTarget] = useState<Website | null>(null);
 
   const { data, isLoading } = useWebsites(params);
+  const { hasPermission } = useMe();
+  const canCreate = hasPermission('websites', 'create');
+  const canUpdate = hasPermission('websites', 'update');
+  const canDelete = hasPermission('websites', 'delete');
   const { data: detailData, isLoading: detailLoading } = useWebsite(detailTarget?.webCode ?? '');
   const { data: editWebsiteDetail } = useWebsite(editTarget?.webCode ?? '');
   const updateStatus = useUpdateWebsiteStatus();
@@ -123,9 +128,11 @@ export default function WebsiteManagePage() {
               { value: 'inactive', label: '비활성' },
             ]}
           />
-          <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreateModalOpen(true)}>
-            웹사이트 추가
-          </Button>
+          {canCreate && (
+            <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreateModalOpen(true)}>
+              웹사이트 추가
+            </Button>
+          )}
         </div>
       </div>
 
@@ -139,6 +146,8 @@ export default function WebsiteManagePage() {
           onEdit={setEditTarget}
           onToggleStatus={handleToggleStatus}
           onDelete={handleDelete}
+          canUpdate={canUpdate}
+          canDelete={canDelete}
         />
       </div>
 

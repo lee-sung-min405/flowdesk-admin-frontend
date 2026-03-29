@@ -16,6 +16,7 @@ interface BoardTypeTableProps {
   onDetail: (boardType: BoardType) => void;
   onEdit: (boardType: BoardType) => void;
   onToggleStatus: (boardType: BoardType) => void;
+  canUpdate?: boolean;
 }
 
 export default function BoardTypeTable({
@@ -24,19 +25,27 @@ export default function BoardTypeTable({
   onDetail,
   onEdit,
   onToggleStatus,
+  canUpdate = true,
 }: BoardTypeTableProps) {
-  const getActionMenuItems = (record: BoardType): MenuProps['items'] => [
-    { key: 'detail', icon: <EyeOutlined />, label: '상세 보기', onClick: () => onDetail(record) },
-    { key: 'edit', icon: <EditOutlined />, label: '정보 수정', onClick: () => onEdit(record) },
-    { type: 'divider' },
-    {
-      key: 'status',
-      icon: <PoweroffOutlined />,
-      label: record.isActive ? '비활성화' : '활성화',
-      danger: !!record.isActive,
-      onClick: () => onToggleStatus(record),
-    },
-  ];
+  const getActionMenuItems = (record: BoardType): MenuProps['items'] => {
+    const items: MenuProps['items'] = [
+      { key: 'detail', icon: <EyeOutlined />, label: '상세 보기', onClick: () => onDetail(record) },
+    ];
+    if (canUpdate) {
+      items.push(
+        { key: 'edit', icon: <EditOutlined />, label: '정보 수정', onClick: () => onEdit(record) },
+        { type: 'divider' },
+        {
+          key: 'status',
+          icon: <PoweroffOutlined />,
+          label: record.isActive ? '비활성화' : '활성화',
+          danger: !!record.isActive,
+          onClick: () => onToggleStatus(record),
+        },
+      );
+    }
+    return items;
+  };
 
   const columns: TableProps<BoardType>['columns'] = [
     {

@@ -13,6 +13,7 @@ import {
   useDeleteBoardType,
 } from '@features/board-type';
 import type { BoardType } from '@features/board-type';
+import { useMe } from '@features/auth';
 import styles from './board-type-manage-page.module.css';
 
 const { confirm } = Modal;
@@ -24,6 +25,10 @@ export default function BoardTypeManagePage() {
   const [editTarget, setEditTarget] = useState<BoardType | null>(null);
 
   const { data, isLoading } = useBoardTypes();
+
+  const { hasPermission } = useMe();
+  const canCreate = hasPermission('board_types', 'create');
+  const canUpdate = hasPermission('board_types', 'update');
   const { data: detailData, isLoading: detailLoading } = useBoardType(detailTarget?.boardId ?? 0);
   const { data: editDetail, isLoading: editLoading } = useBoardType(editTarget?.boardId ?? 0);
   const updateBoardType = useUpdateBoardType();
@@ -87,9 +92,11 @@ export default function BoardTypeManagePage() {
           <p className={styles.pageDesc}>게시판 타입을 생성하고 관리합니다.</p>
         </div>
         <div className={styles.toolbar}>
-          <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreateModalOpen(true)}>
-            게시판 추가
-          </Button>
+          {canCreate && (
+            <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreateModalOpen(true)}>
+              게시판 추가
+            </Button>
+          )}
         </div>
       </div>
 
@@ -99,9 +106,11 @@ export default function BoardTypeManagePage() {
             description="등록된 게시판 타입이 없습니다"
             style={{ padding: '60px 0' }}
           >
-            <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreateModalOpen(true)}>
-              첫 게시판 만들기
-            </Button>
+            {canCreate && (
+              <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreateModalOpen(true)}>
+                첫 게시판 만들기
+              </Button>
+            )}
           </Empty>
         ) : (
           <BoardTypeTable
@@ -110,6 +119,7 @@ export default function BoardTypeManagePage() {
             onDetail={setDetailTarget}
             onEdit={setEditTarget}
             onToggleStatus={handleToggleStatus}
+            canUpdate={canUpdate}
           />
         )}
       </div>

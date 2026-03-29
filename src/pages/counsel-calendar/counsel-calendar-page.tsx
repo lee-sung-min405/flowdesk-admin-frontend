@@ -28,8 +28,9 @@ export default function CounselCalendarPage() {
   const [assigneeFilter, setAssigneeFilter] = useState<number | undefined>();
   const [detailTarget, setDetailTarget] = useState<CounselListItem | null>(null);
 
-  const { permissions } = useMe();
+  const { permissions, hasPermission } = useMe();
   const isAdmin = !!permissions['counsels.admin'];
+  const canDelete = hasPermission('counsels', 'delete');
 
   // 월 범위 계산
   const params = useMemo<GetCounselsRequest>(() => {
@@ -138,6 +139,7 @@ export default function CounselCalendarPage() {
           loading={detailLoading}
           statusOptions={statusOptions}
           assigneeOptions={assigneeOptions}
+          canDelete={canDelete}
           onDelete={() => {
             if (!detailTarget) return;
             confirm({

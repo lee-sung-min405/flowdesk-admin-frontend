@@ -13,6 +13,7 @@ import {
   useDeleteTenantStatus,
 } from '@features/tenant-status';
 import type { GetTenantStatusesRequest, TenantStatus } from '@features/tenant-status';
+import { useMe } from '@features/auth';
 import styles from './tenant-status-manage-page.module.css';
 
 const { confirm } = Modal;
@@ -24,6 +25,10 @@ export default function TenantStatusManagePage() {
   const [editTarget, setEditTarget] = useState<TenantStatus | null>(null);
 
   const { data, isLoading, refetch } = useTenantStatuses(params);
+  const { hasPermission } = useMe();
+  const canCreate = hasPermission('tenants.status', 'create');
+  const canUpdate = hasPermission('tenants.status', 'update');
+  const canDelete = hasPermission('tenants.status', 'delete');
   const { data: detailData, isLoading: detailLoading } = useTenantStatus(
     detailTarget?.tenantStatusId ?? 0,
   );
@@ -105,13 +110,15 @@ export default function TenantStatusManagePage() {
           <h1 className={styles.pageTitle}>상태 관리</h1>
           <p className={styles.pageDesc}>도메인별 상태 값을 관리합니다.</p>
         </div>
-        <Button
-          type="primary"
-          icon={<PlusOutlined />}
-          onClick={() => setCreateModalOpen(true)}
-        >
-          상태 추가
-        </Button>
+        {canCreate && (
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={() => setCreateModalOpen(true)}
+          >
+            상태 추가
+          </Button>
+        )}
       </div>
 
       {/* ── 요약 카드 ── */}
@@ -173,6 +180,8 @@ export default function TenantStatusManagePage() {
             onEdit={setEditTarget}
             onToggleActive={handleToggleActive}
             onDelete={handleDelete}
+            canUpdate={canUpdate}
+            canDelete={canDelete}
           />
         )}
       </div>

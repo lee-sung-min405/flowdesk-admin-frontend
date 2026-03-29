@@ -13,6 +13,7 @@ import {
 import type { Role, GetRolesRequest } from '@features/role';
 import { usePermissionCatalog } from '@features/permission-catalog';
 import { useUsers } from '@features/user';
+import { useMe } from '@features/auth';
 import styles from './role-manage-page.module.css';
 const { confirm } = Modal;
 
@@ -24,6 +25,11 @@ export default function RoleManagePage() {
   const [userListParams, setUserListParams] = useState<{ page?: number; limit?: number; q?: string }>({ page: 1, limit: 10 });
 
   const { data, isLoading } = useRoles(params);
+
+  const { hasPermission } = useMe();
+  const canCreate = hasPermission('roles', 'create');
+  const canUpdate = hasPermission('roles', 'update');
+  const canDelete = hasPermission('roles', 'delete');
 
   const drawerOpen = detailRoleId > 0;
   const { data: catalogData, isLoading: catalogLoading } = usePermissionCatalog({ enabled: drawerOpen });
@@ -118,13 +124,15 @@ export default function RoleManagePage() {
               { value: 'inactive', label: '비활성' },
             ]}
           />
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={() => setCreateModalOpen(true)}
-          >
-            역할 생성
-          </Button>
+          {canCreate && (
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={() => setCreateModalOpen(true)}
+            >
+              역할 생성
+            </Button>
+          )}
         </div>
       </div>
 
@@ -138,6 +146,8 @@ export default function RoleManagePage() {
           onEdit={setEditTarget}
           onToggleStatus={handleToggleStatus}
           onDelete={handleDelete}
+          canUpdate={canUpdate}
+          canDelete={canDelete}
         />
       </div>
 

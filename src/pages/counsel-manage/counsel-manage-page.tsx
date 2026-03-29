@@ -42,8 +42,10 @@ export default function CounselManagePage() {
   const [editTarget, setEditTarget] = useState<CounselListItem | null>(null);
   const [selectedKeys, setSelectedKeys] = useState<React.Key[]>([]);
 
-  const { permissions } = useMe();
+  const { permissions, hasPermission } = useMe();
   const isAdmin = !!permissions['counsels.admin'];
+  const canUpdate = hasPermission('counsels', 'update');
+  const canDelete = hasPermission('counsels', 'delete');
 
   const { data, isLoading, refetch, isFetching, dataUpdatedAt } = useCounsels(params);
   const { data: dashboardData } = useCounselDashboard();
@@ -426,6 +428,8 @@ export default function CounselManagePage() {
           }}
           selectedRowKeys={selectedKeys}
           onSelectionChange={setSelectedKeys}
+          canUpdate={canUpdate}
+          canDelete={canDelete}
         />
       </div>
 
@@ -446,6 +450,7 @@ export default function CounselManagePage() {
           loading={detailLoading}
           statusOptions={statusOptions}
           assigneeOptions={assigneeOptions}
+          canDelete={canDelete}
           onDelete={() => {
             if (!detailTarget) return;
             confirm({
@@ -551,10 +556,14 @@ export default function CounselManagePage() {
               </Dropdown>
             </>
           )}
-          <span className={styles.bulkDivider} />
-          <button className={`${styles.bulkBtn} ${styles.bulkDanger}`} onClick={handleBulkDelete}>
-            <DeleteOutlined /> 삭제
-          </button>
+          {canDelete && (
+            <>
+              <span className={styles.bulkDivider} />
+              <button className={`${styles.bulkBtn} ${styles.bulkDanger}`} onClick={handleBulkDelete}>
+                <DeleteOutlined /> 삭제
+              </button>
+            </>
+          )}
         </div>
       )}
     </div>

@@ -14,6 +14,7 @@ import {
 } from '@features/admin-permission';
 import type { AdminPermissionListItem, GetAdminPermissionsRequest } from '@features/admin-permission';
 import { useAdminPages } from '@features/admin-page';
+import { useMe } from '@features/auth';
 import styles from './admin-permission-manage-page.module.css';
 
 const { confirm } = Modal;
@@ -39,6 +40,11 @@ export default function AdminPermissionManagePage() {
 
   // Fetch pages (tree structure requires parentId, sortOrder)
   const { data: pagesData, isLoading: pagesLoading, dataUpdatedAt: pagesUpdatedAt, refetch: refetchPages, isFetching: pagesFetching } = useAdminPages({ isActive: 1 });
+
+  const { hasPermission } = useMe();
+  const canCreate = hasPermission('super.permissions', 'create');
+  const canUpdate = hasPermission('super.permissions', 'update');
+  const canDelete = hasPermission('super.permissions', 'delete');
 
   // Fetch all permissions
   const { data: permData, isLoading: permLoading, dataUpdatedAt: permUpdatedAt, refetch: refetchPerms, isFetching: permFetching } = useAdminPermissions({});
@@ -221,6 +227,9 @@ export default function AdminPermissionManagePage() {
           onEdit={setEditTarget}
           onToggleStatus={handleToggleStatus}
           onDelete={handleDelete}
+          canCreate={canCreate}
+          canUpdate={canUpdate}
+          canDelete={canDelete}
         />
       </div>
 
@@ -290,6 +299,8 @@ export default function AdminPermissionManagePage() {
           onEdit={setEditTarget}
           onToggleStatus={handleToggleStatus}
           onDelete={handleDelete}
+          canUpdate={canUpdate}
+          canDelete={canDelete}
         />
       </div>
 

@@ -14,6 +14,7 @@ import {
 } from '@features/user';
 import type { User, GetUsersRequest } from '@features/user';
 import { useRoles } from '@features/role';
+import { useMe } from '@features/auth';
 import styles from './user-page.module.css';
 
 const { confirm } = Modal;
@@ -27,6 +28,9 @@ export default function UserPage() {
 
   const { data, isLoading } = useUsers(params);
   const { data: rolesData } = useRoles({ isActive: 1 });
+  const { hasPermission } = useMe();
+  const canCreate = hasPermission('users', 'create');
+  const canUpdate = hasPermission('users', 'update');
   const { data: detailData, isLoading: detailLoading } = useUser(detailTarget?.userSeq ?? 0);
   const { data: editUserDetail } = useUser(editTarget?.userSeq ?? 0);
   const updateStatus = useUpdateUserStatus();
@@ -115,13 +119,15 @@ export default function UserPage() {
               { value: 'inactive', label: '정지' },
             ]}
           />
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={() => setCreateModalOpen(true)}
-          >
-            사용자 생성
-          </Button>
+          {canCreate && (
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={() => setCreateModalOpen(true)}
+            >
+              사용자 생성
+            </Button>
+          )}
         </div>
       </div>
 
@@ -136,6 +142,7 @@ export default function UserPage() {
           onToggleStatus={handleToggleStatus}
           onResetPassword={setPasswordTarget}
           onInvalidateTokens={handleInvalidateTokens}
+          canUpdate={canUpdate}
         />
       </div>
 

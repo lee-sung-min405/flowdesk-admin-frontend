@@ -16,6 +16,8 @@ interface StatusGroupListProps {
   onEdit: (item: TenantStatus) => void;
   onToggleActive: (item: TenantStatus) => void;
   onDelete: (item: TenantStatus) => void;
+  canUpdate?: boolean;
+  canDelete?: boolean;
 }
 
 export default function StatusGroupList({
@@ -24,6 +26,8 @@ export default function StatusGroupList({
   onEdit,
   onToggleActive,
   onDelete,
+  canUpdate = true,
+  canDelete = true,
 }: StatusGroupListProps) {
   if (groups.length === 0) {
     return <Empty description="등록된 상태가 없습니다." />;
@@ -44,6 +48,8 @@ export default function StatusGroupList({
         onEdit={onEdit}
         onToggleActive={onToggleActive}
         onDelete={onDelete}
+        canUpdate={canUpdate}
+        canDelete={canDelete}
       />
     ),
   }));
@@ -65,42 +71,55 @@ interface StatusTableProps {
   onEdit: (item: TenantStatus) => void;
   onToggleActive: (item: TenantStatus) => void;
   onDelete: (item: TenantStatus) => void;
+  canUpdate?: boolean;
+  canDelete?: boolean;
 }
 
-function StatusTable({ items, onDetail, onEdit, onToggleActive, onDelete }: StatusTableProps) {
+function StatusTable({ items, onDetail, onEdit, onToggleActive, onDelete, canUpdate = true, canDelete = true }: StatusTableProps) {
   if (items.length === 0) {
     return <div className={styles.emptyGroup}>상태가 없습니다.</div>;
   }
 
-  const getActionMenuItems = (item: TenantStatus): MenuProps['items'] => [
-    {
-      key: 'detail',
-      icon: <EyeOutlined />,
-      label: '상세 보기',
-      onClick: () => onDetail(item),
-    },
-    {
-      key: 'edit',
-      icon: <EditOutlined />,
-      label: '정보 수정',
-      onClick: () => onEdit(item),
-    },
-    {
-      key: 'status',
-      icon: <PoweroffOutlined />,
-      label: item.isActive ? '비활성화' : '활성화',
-      danger: !!item.isActive,
-      onClick: () => onToggleActive(item),
-    },
-    { type: 'divider' },
-    {
-      key: 'delete',
-      icon: <DeleteOutlined />,
-      label: '삭제',
-      danger: true,
-      onClick: () => onDelete(item),
-    },
-  ];
+  const getActionMenuItems = (item: TenantStatus): MenuProps['items'] => {
+    const menuItems: MenuProps['items'] = [
+      {
+        key: 'detail',
+        icon: <EyeOutlined />,
+        label: '상세 보기',
+        onClick: () => onDetail(item),
+      },
+    ];
+    if (canUpdate) {
+      menuItems.push(
+        {
+          key: 'edit',
+          icon: <EditOutlined />,
+          label: '정보 수정',
+          onClick: () => onEdit(item),
+        },
+        {
+          key: 'status',
+          icon: <PoweroffOutlined />,
+          label: item.isActive ? '비활성화' : '활성화',
+          danger: !!item.isActive,
+          onClick: () => onToggleActive(item),
+        },
+      );
+    }
+    if (canDelete) {
+      menuItems.push(
+        { type: 'divider' },
+        {
+          key: 'delete',
+          icon: <DeleteOutlined />,
+          label: '삭제',
+          danger: true,
+          onClick: () => onDelete(item),
+        },
+      );
+    }
+    return menuItems;
+  };
 
   return (
     <div className={styles.tableWrapper}>

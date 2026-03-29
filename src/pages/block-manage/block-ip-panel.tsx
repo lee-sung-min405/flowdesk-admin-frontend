@@ -13,6 +13,7 @@ import {
   useDeleteBlockIp,
 } from '@features/security';
 import type { BlockIp, GetBlockIpsRequest } from '@features/security';
+import { useMe } from '@features/auth';
 import styles from './block-manage-page.module.css';
 
 const { confirm } = Modal;
@@ -25,6 +26,11 @@ export default function BlockIpPanel() {
   const [editTarget, setEditTarget] = useState<BlockIp | null>(null);
 
   const { data, isLoading } = useBlockIps(params);
+
+  const { hasPermission } = useMe();
+  const canCreate = hasPermission('security', 'create');
+  const canUpdate = hasPermission('security', 'update');
+  const canDelete = hasPermission('security', 'delete');
   const { data: detailData, isLoading: detailLoading } = useBlockIp(detailTarget?.dbiIdx ?? 0);
   const { data: editDetailData } = useBlockIp(editTarget?.dbiIdx ?? 0);
   const updateBlockIp = useUpdateBlockIp();
@@ -103,9 +109,11 @@ export default function BlockIpPanel() {
             { value: 'inactive', label: '비활성' },
           ]}
         />
-        <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreateModalOpen(true)}>
-          IP 차단 등록
-        </Button>
+        {canCreate && (
+          <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreateModalOpen(true)}>
+            IP 차단 등록
+          </Button>
+        )}
         <Button icon={<SafetyOutlined />} onClick={() => setCheckModalOpen(true)}>
           차단 여부 확인
         </Button>
@@ -120,6 +128,8 @@ export default function BlockIpPanel() {
         onEdit={setEditTarget}
         onToggleStatus={handleToggleStatus}
         onDelete={handleDelete}
+        canUpdate={canUpdate}
+        canDelete={canDelete}
       />
 
       {/* 상세 모달 */}

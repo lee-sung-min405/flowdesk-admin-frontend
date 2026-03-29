@@ -13,6 +13,7 @@ import {
 } from '@features/board';
 import type { Post, GetPostsRequest } from '@features/board';
 import { useBoardTypes } from '@features/board-type';
+import { useMe } from '@features/auth';
 import styles from './board-manage-page.module.css';
 
 const { confirm } = Modal;
@@ -42,6 +43,11 @@ export default function BoardManagePage() {
     editTarget?.postId ?? 0,
   );
   const deletePost = useDeletePost();
+
+  const { hasPermission } = useMe();
+  const canCreate = hasPermission('boards', 'create');
+  const canUpdate = hasPermission('boards', 'update');
+  const canDelete = hasPermission('boards', 'delete');
 
   const handleBoardChange = (boardId: number) => {
     setSelectedBoardId(boardId);
@@ -99,7 +105,7 @@ export default function BoardManagePage() {
               }] : []),
             ]}
           />
-          {selectedBoardId && (
+          {selectedBoardId && canCreate && (
             <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreateModalOpen(true)}>
               게시글 작성
             </Button>
@@ -117,6 +123,8 @@ export default function BoardManagePage() {
             onDetail={setDetailTarget}
             onEdit={setEditTarget}
             onDelete={handleDelete}
+            canUpdate={canUpdate}
+            canDelete={canDelete}
           />
         ) : allBoardTypes.length === 0 && !boardTypesLoading ? (
           <Empty

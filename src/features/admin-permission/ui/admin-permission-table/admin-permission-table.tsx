@@ -19,6 +19,8 @@ interface AdminPermissionTableProps {
   onEdit: (permission: AdminPermissionListItem) => void;
   onToggleStatus: (permission: AdminPermissionListItem) => void;
   onDelete: (permission: AdminPermissionListItem) => void;
+  canUpdate?: boolean;
+  canDelete?: boolean;
 }
 
 export default function AdminPermissionTable({
@@ -30,36 +32,49 @@ export default function AdminPermissionTable({
   onEdit,
   onToggleStatus,
   onDelete,
+  canUpdate = true,
+  canDelete = true,
 }: AdminPermissionTableProps) {
-  const getActionMenuItems = (record: AdminPermissionListItem): MenuProps['items'] => [
-    {
-      key: 'detail',
-      icon: <EyeOutlined />,
-      label: '상세 보기',
-      onClick: () => onDetail(record),
-    },
-    {
-      key: 'edit',
-      icon: <EditOutlined />,
-      label: '정보 수정',
-      onClick: () => onEdit(record),
-    },
-    {
-      key: 'status',
-      icon: <PoweroffOutlined />,
-      label: record.isActive ? '비활성화' : '활성화',
-      danger: !!record.isActive,
-      onClick: () => onToggleStatus(record),
-    },
-    { type: 'divider' },
-    {
-      key: 'delete',
-      icon: <DeleteOutlined />,
-      label: '삭제',
-      danger: true,
-      onClick: () => onDelete(record),
-    },
-  ];
+  const getActionMenuItems = (record: AdminPermissionListItem): MenuProps['items'] => {
+    const items: MenuProps['items'] = [
+      {
+        key: 'detail',
+        icon: <EyeOutlined />,
+        label: '상세 보기',
+        onClick: () => onDetail(record),
+      },
+    ];
+    if (canUpdate) {
+      items.push(
+        {
+          key: 'edit',
+          icon: <EditOutlined />,
+          label: '정보 수정',
+          onClick: () => onEdit(record),
+        },
+        {
+          key: 'status',
+          icon: <PoweroffOutlined />,
+          label: record.isActive ? '비활성화' : '활성화',
+          danger: !!record.isActive,
+          onClick: () => onToggleStatus(record),
+        },
+      );
+    }
+    if (canDelete) {
+      items.push(
+        { type: 'divider' },
+        {
+          key: 'delete',
+          icon: <DeleteOutlined />,
+          label: '삭제',
+          danger: true,
+          onClick: () => onDelete(record),
+        },
+      );
+    }
+    return items;
+  };
 
   const columns: TableProps<AdminPermissionListItem>['columns'] = [
     {

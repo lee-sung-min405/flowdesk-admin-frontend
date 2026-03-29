@@ -13,6 +13,7 @@ import {
   useDeleteBlockWord,
 } from '@features/security';
 import type { BlockWord, GetBlockWordsRequest, MatchType } from '@features/security';
+import { useMe } from '@features/auth';
 import styles from './block-manage-page.module.css';
 
 const { confirm } = Modal;
@@ -25,6 +26,11 @@ export default function BlockWordPanel() {
   const [editTarget, setEditTarget] = useState<BlockWord | null>(null);
 
   const { data, isLoading } = useBlockWords(params);
+
+  const { hasPermission } = useMe();
+  const canCreate = hasPermission('security', 'create');
+  const canUpdate = hasPermission('security', 'update');
+  const canDelete = hasPermission('security', 'delete');
   const { data: detailData, isLoading: detailLoading } = useBlockWord(detailTarget?.dbwIdx ?? 0);
   const { data: editDetailData } = useBlockWord(editTarget?.dbwIdx ?? 0);
   const updateBlockWord = useUpdateBlockWord();
@@ -122,9 +128,11 @@ export default function BlockWordPanel() {
             { value: 'REGEX', label: '정규식' },
           ]}
         />
-        <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreateModalOpen(true)}>
-          금칙어 등록
-        </Button>
+        {canCreate && (
+          <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreateModalOpen(true)}>
+            금칙어 등록
+          </Button>
+        )}
         <Button icon={<SafetyOutlined />} onClick={() => setCheckModalOpen(true)}>
           차단 여부 확인
         </Button>
@@ -139,6 +147,8 @@ export default function BlockWordPanel() {
         onEdit={setEditTarget}
         onToggleStatus={handleToggleStatus}
         onDelete={handleDelete}
+        canUpdate={canUpdate}
+        canDelete={canDelete}
       />
 
       {/* 상세 모달 */}

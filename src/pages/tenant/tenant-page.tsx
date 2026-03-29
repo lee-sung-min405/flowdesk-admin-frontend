@@ -12,6 +12,7 @@ import {
   useDeleteTenant,
 } from '@features/tenant';
 import type { Tenant, GetTenantsRequest } from '@features/tenant';
+import { useMe } from '@features/auth';
 import styles from './tenant-page.module.css';
 
 const { confirm } = Modal;
@@ -23,6 +24,10 @@ export default function TenantPage() {
   const [editTarget, setEditTarget] = useState<Tenant | null>(null);
 
   const { data, isLoading } = useTenants(params);
+  const { hasPermission } = useMe();
+  const canCreate = hasPermission('super.tenants', 'create');
+  const canUpdate = hasPermission('super.tenants', 'update');
+  const canDelete = hasPermission('super.tenants', 'delete');
   const { data: detailData, isLoading: detailLoading } = useTenant(detailTarget?.tenantId ?? 0);
   const { data: editTenantDetail } = useTenant(editTarget?.tenantId ?? 0);
   const updateStatus = useUpdateTenantStatus();
@@ -111,13 +116,15 @@ export default function TenantPage() {
               { value: 'inactive', label: '비활성' },
             ]}
           />
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={() => setCreateModalOpen(true)}
-          >
-            테넌트 생성
-          </Button>
+          {canCreate && (
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={() => setCreateModalOpen(true)}
+            >
+              테넌트 생성
+            </Button>
+          )}
         </div>
       </div>
 
@@ -131,6 +138,8 @@ export default function TenantPage() {
           onEdit={setEditTarget}
           onToggleStatus={handleToggleStatus}
           onDelete={handleDelete}
+          canUpdate={canUpdate}
+          canDelete={canDelete}
         />
       </div>
 

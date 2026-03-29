@@ -12,6 +12,7 @@ import {
   useDeleteAdminPage,
 } from '@features/admin-page';
 import type { AdminPageListItem, GetAdminPagesRequest } from '@features/admin-page';
+import { useMe } from '@features/auth';
 import styles from './admin-page-manage-page.module.css';
 
 const { confirm } = Modal;
@@ -23,6 +24,10 @@ export default function AdminPageManagePage() {
   const [detailTarget, setDetailTarget] = useState<AdminPageListItem | null>(null);
 
   const { data, isLoading } = useAdminPages(params);
+  const { hasPermission } = useMe();
+  const canCreate = hasPermission('super.pages', 'create');
+  const canUpdate = hasPermission('super.pages', 'update');
+  const canDelete = hasPermission('super.pages', 'delete');
   const { data: parentPagesData } = useAdminPages({}, { enabled: createModalOpen || !!editTarget });
   const { data: editPageDetail } = useAdminPage(editTarget?.pageId ?? 0);
   const { data: detailPageData, isLoading: detailLoading } = useAdminPage(detailTarget?.pageId ?? 0);
@@ -129,13 +134,15 @@ export default function AdminPageManagePage() {
               { value: 'inactive', label: '비활성' },
             ]}
           />
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={() => setCreateModalOpen(true)}
-          >
-            페이지 생성
-          </Button>
+          {canCreate && (
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={() => setCreateModalOpen(true)}
+            >
+              페이지 생성
+            </Button>
+          )}
         </div>
       </div>
 
@@ -149,6 +156,8 @@ export default function AdminPageManagePage() {
           onEdit={setEditTarget}
           onToggleStatus={handleToggleStatus}
           onDelete={handleDelete}
+          canUpdate={canUpdate}
+          canDelete={canDelete}
         />
       </div>
 

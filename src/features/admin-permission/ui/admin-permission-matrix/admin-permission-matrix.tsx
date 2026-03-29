@@ -37,6 +37,9 @@ interface AdminPermissionMatrixProps {
   onEdit?: (permission: AdminPermissionListItem) => void;
   onToggleStatus?: (permission: AdminPermissionListItem) => void;
   onDelete?: (permission: AdminPermissionListItem) => void;
+  canCreate?: boolean;
+  canUpdate?: boolean;
+  canDelete?: boolean;
 }
 
 /** pageId-actionId → permissionId lookup */
@@ -108,6 +111,9 @@ export default function AdminPermissionMatrix({
   onEdit,
   onToggleStatus,
   onDelete,
+  canCreate = true,
+  canUpdate = true,
+  canDelete = true,
 }: AdminPermissionMatrixProps) {
   const tree = useMemo(() => buildTree(pages), [pages]);
   const permMap = useMemo(() => buildPermissionMap(permissions), [permissions]);
@@ -237,35 +243,41 @@ export default function AdminPermissionMatrix({
                                   >
                                     상세
                                   </Button>
-                                  <Button
-                                    size="small"
-                                    type="text"
-                                    icon={<EditOutlined />}
-                                    className={styles.popoverBtn}
-                                    onClick={() => { setOpenPopover(null); onEdit?.(perm); }}
-                                  >
-                                    수정
-                                  </Button>
-                                  <Button
-                                    size="small"
-                                    type="text"
-                                    icon={perm.isActive ? <StopOutlined /> : <CheckCircleOutlined />}
-                                    danger={!!perm.isActive}
-                                    className={styles.popoverBtn}
-                                    onClick={() => { setOpenPopover(null); onToggleStatus?.(perm); }}
-                                  >
-                                    {perm.isActive ? '비활성화' : '활성화'}
-                                  </Button>
-                                  <Button
-                                    size="small"
-                                    type="text"
-                                    icon={<DeleteOutlined />}
-                                    danger
-                                    className={styles.popoverBtn}
-                                    onClick={() => { setOpenPopover(null); onDelete?.(perm); }}
-                                  >
-                                    삭제
-                                  </Button>
+                                  {canUpdate && (
+                                    <>
+                                      <Button
+                                        size="small"
+                                        type="text"
+                                        icon={<EditOutlined />}
+                                        className={styles.popoverBtn}
+                                        onClick={() => { setOpenPopover(null); onEdit?.(perm); }}
+                                      >
+                                        수정
+                                      </Button>
+                                      <Button
+                                        size="small"
+                                        type="text"
+                                        icon={perm.isActive ? <StopOutlined /> : <CheckCircleOutlined />}
+                                        danger={!!perm.isActive}
+                                        className={styles.popoverBtn}
+                                        onClick={() => { setOpenPopover(null); onToggleStatus?.(perm); }}
+                                      >
+                                        {perm.isActive ? '비활성화' : '활성화'}
+                                      </Button>
+                                    </>
+                                  )}
+                                  {canDelete && (
+                                    <Button
+                                      size="small"
+                                      type="text"
+                                      icon={<DeleteOutlined />}
+                                      danger
+                                      className={styles.popoverBtn}
+                                      onClick={() => { setOpenPopover(null); onDelete?.(perm); }}
+                                    >
+                                      삭제
+                                    </Button>
+                                  )}
                                 </div>
                               </div>
                             }
@@ -282,7 +294,7 @@ export default function AdminPermissionMatrix({
                               )}
                             </Tooltip>
                           </Popover>
-                        ) : (
+                        ) : canCreate ? (
                           <Tooltip title={`${node.displayName} - ${action.displayName || action.actionName} 권한 추가`}>
                             <button
                               type="button"
@@ -292,6 +304,8 @@ export default function AdminPermissionMatrix({
                               <PlusOutlined />
                             </button>
                           </Tooltip>
+                        ) : (
+                          <span className={styles.emptyCell} />
                         )}
                       </td>
                     );

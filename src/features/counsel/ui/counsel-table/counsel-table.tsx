@@ -42,6 +42,8 @@ interface CounselTableProps {
   selectedRowKeys?: React.Key[];
   /** 선택 변경 콜백 (controlled) */
   onSelectionChange?: (keys: React.Key[]) => void;
+  canUpdate?: boolean;
+  canDelete?: boolean;
 }
 
 const DEFAULT_STATUS_COLOR = '#9ca3af';
@@ -61,6 +63,8 @@ export default function CounselTable({
   onStatusChangeInline,
   selectedRowKeys: controlledKeys,
   onSelectionChange,
+  canUpdate = true,
+  canDelete = true,
 }: CounselTableProps) {
   const [internalKeys, setInternalKeys] = useState<React.Key[]>([]);
   const selectedRowKeys = controlledKeys ?? internalKeys;
@@ -74,28 +78,37 @@ export default function CounselTable({
     });
   };
 
-  const getActionMenuItems = (record: CounselListItem): MenuProps['items'] => [
-    {
-      key: 'detail',
-      icon: <EyeOutlined />,
-      label: '상세 보기',
-      onClick: () => onDetail(record),
-    },
-    {
-      key: 'edit',
-      icon: <EditOutlined />,
-      label: '수정',
-      onClick: () => onEdit(record),
-    },
-    { type: 'divider' },
-    {
-      key: 'delete',
-      icon: <DeleteOutlined />,
-      label: '삭제',
-      danger: true,
-      onClick: () => onDelete(record),
-    },
-  ];
+  const getActionMenuItems = (record: CounselListItem): MenuProps['items'] => {
+    const items: MenuProps['items'] = [
+      {
+        key: 'detail',
+        icon: <EyeOutlined />,
+        label: '상세 보기',
+        onClick: () => onDetail(record),
+      },
+    ];
+    if (canUpdate) {
+      items.push({
+        key: 'edit',
+        icon: <EditOutlined />,
+        label: '수정',
+        onClick: () => onEdit(record),
+      });
+    }
+    if (canDelete) {
+      items.push(
+        { type: 'divider' },
+        {
+          key: 'delete',
+          icon: <DeleteOutlined />,
+          label: '삭제',
+          danger: true,
+          onClick: () => onDelete(record),
+        },
+      );
+    }
+    return items;
+  };
 
   const columns: TableProps<CounselListItem>['columns'] = [
     {

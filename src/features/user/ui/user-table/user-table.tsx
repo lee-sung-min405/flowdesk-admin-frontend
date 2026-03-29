@@ -22,6 +22,7 @@ interface UserTableProps {
   onToggleStatus: (user: User) => void;
   onResetPassword: (user: User) => void;
   onInvalidateTokens: (user: User) => void;
+  canUpdate?: boolean;
 }
 
 export default function UserTable({
@@ -34,42 +35,50 @@ export default function UserTable({
   onToggleStatus,
   onResetPassword,
   onInvalidateTokens,
+  canUpdate = true,
 }: UserTableProps) {
-  const getActionMenuItems = (record: User): MenuProps['items'] => [
-    {
-      key: 'detail',
-      icon: <EyeOutlined />,
-      label: '상세 보기',
-      onClick: () => onDetail(record),
-    },
-    {
-      key: 'edit',
-      icon: <EditOutlined />,
-      label: '정보 수정',
-      onClick: () => onEdit(record),
-    },
-    {
-      key: 'status',
-      icon: <PoweroffOutlined />,
-      label: record.isActive ? '계정 정지' : '계정 활성화',
-      danger: !!record.isActive,
-      onClick: () => onToggleStatus(record),
-    },
-    { type: 'divider' },
-    {
-      key: 'password',
-      icon: <KeyOutlined />,
-      label: '비밀번호 초기화',
-      onClick: () => onResetPassword(record),
-    },
-    {
-      key: 'tokens',
-      icon: <LogoutOutlined />,
-      label: '강제 로그아웃',
-      danger: true,
-      onClick: () => onInvalidateTokens(record),
-    },
-  ];
+  const getActionMenuItems = (record: User): MenuProps['items'] => {
+    const items: MenuProps['items'] = [
+      {
+        key: 'detail',
+        icon: <EyeOutlined />,
+        label: '상세 보기',
+        onClick: () => onDetail(record),
+      },
+    ];
+    if (canUpdate) {
+      items.push(
+        {
+          key: 'edit',
+          icon: <EditOutlined />,
+          label: '정보 수정',
+          onClick: () => onEdit(record),
+        },
+        {
+          key: 'status',
+          icon: <PoweroffOutlined />,
+          label: record.isActive ? '계정 정지' : '계정 활성화',
+          danger: !!record.isActive,
+          onClick: () => onToggleStatus(record),
+        },
+        { type: 'divider' },
+        {
+          key: 'password',
+          icon: <KeyOutlined />,
+          label: '비밀번호 초기화',
+          onClick: () => onResetPassword(record),
+        },
+        {
+          key: 'tokens',
+          icon: <LogoutOutlined />,
+          label: '강제 로그아웃',
+          danger: true,
+          onClick: () => onInvalidateTokens(record),
+        },
+      );
+    }
+    return items;
+  };
 
   const columns: TableProps<User>['columns'] = [
     {

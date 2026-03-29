@@ -42,6 +42,7 @@ interface CounselDetailProps {
   statusOptions?: StatusOption[];
   assigneeOptions?: AssigneeOption[];
   onDelete?: () => void;
+  canDelete?: boolean;
 }
 
 export default function CounselDetail({
@@ -50,6 +51,7 @@ export default function CounselDetail({
   statusOptions = [],
   assigneeOptions = [],
   onDelete,
+  canDelete = true,
 }: CounselDetailProps) {
   /* ── Local edit states ── */
   const [editSource, setEditSource] = useState<string | null>(null);
@@ -406,12 +408,14 @@ export default function CounselDetail({
             />
           </div>
         )}
-        <div className={styles.actionGroup}>
-          <label className={styles.actionLabel}>관리</label>
-          <Button danger icon={<DeleteOutlined />} onClick={onDelete}>
-            삭제
-          </Button>
-        </div>
+        {canDelete && (
+          <div className={styles.actionGroup}>
+            <label className={styles.actionLabel}>관리</label>
+            <Button danger icon={<DeleteOutlined />} onClick={onDelete}>
+              삭제
+            </Button>
+          </div>
+        )}
         <div className={styles.actionGroup}>
           <label className={styles.actionLabel}>차단</label>
           <div className={styles.blockBtnGroup}>

@@ -12,6 +12,7 @@ import {
   useDeleteAdminAction,
 } from '@features/admin-action';
 import type { AdminActionListItem, GetAdminActionsRequest } from '@features/admin-action';
+import { useMe } from '@features/auth';
 import styles from './admin-action-manage-page.module.css';
 
 const { confirm } = Modal;
@@ -23,6 +24,10 @@ export default function AdminActionManagePage() {
   const [detailTarget, setDetailTarget] = useState<AdminActionListItem | null>(null);
 
   const { data, isLoading } = useAdminActions(params);
+  const { hasPermission } = useMe();
+  const canCreate = hasPermission('super.actions', 'create');
+  const canUpdate = hasPermission('super.actions', 'update');
+  const canDelete = hasPermission('super.actions', 'delete');
   const { data: detailData, isLoading: detailLoading } = useAdminAction(detailTarget?.actionId ?? 0);
   const updateStatus = useUpdateAdminActionStatus();
   const deleteAction = useDeleteAdminAction();
@@ -110,13 +115,15 @@ export default function AdminActionManagePage() {
               { value: 'inactive', label: '비활성' },
             ]}
           />
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={() => setCreateModalOpen(true)}
-          >
-            액션 생성
-          </Button>
+          {canCreate && (
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={() => setCreateModalOpen(true)}
+            >
+              액션 생성
+            </Button>
+          )}
         </div>
       </div>
 
@@ -130,6 +137,8 @@ export default function AdminActionManagePage() {
           onEdit={setEditTarget}
           onToggleStatus={handleToggleStatus}
           onDelete={handleDelete}
+          canUpdate={canUpdate}
+          canDelete={canDelete}
         />
       </div>
 
