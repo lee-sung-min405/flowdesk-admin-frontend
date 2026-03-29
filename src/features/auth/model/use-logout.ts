@@ -1,5 +1,6 @@
 import { useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { queryClient } from '@shared/api/query-client';
 import { logoutApi } from '../api/logout.api';
 import { authStorage } from '../lib/auth-storage';
 import { useAuthStore } from './auth.store';
@@ -21,6 +22,7 @@ export function useLogout() {
     authStorage.clearTokens();
     authStorage.clearMe();
     useAuthStore.getState().clearAuth();
+    queryClient.clear();
     navigate('/login', { replace: true });
   }, [navigate]);
 }

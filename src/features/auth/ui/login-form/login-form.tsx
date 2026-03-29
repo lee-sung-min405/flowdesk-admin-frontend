@@ -11,6 +11,7 @@ import { useLogin } from '../../model/use-login';
 import { useNavigate } from 'react-router-dom';
 import { loginSchema } from '../../model/login.schema';
 import { getApiErrorMessage } from '@shared/utils/api-error-message';
+import { queryClient } from '@shared/api/query-client';
 
 export default function LoginForm() {
   const { control, handleSubmit, reset, setFocus, formState: { errors } } = useForm<LoginRequest>({
@@ -28,6 +29,7 @@ export default function LoginForm() {
   const onSubmit = async (data: LoginRequest) => {
     setApiError(null);
     try {
+      queryClient.clear();
       await loginMutation.mutateAsync(data);
       navigate('/home');
     } catch (error: unknown) {
