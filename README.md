@@ -42,11 +42,14 @@ Flowdesk Admin Frontend는 React 19, TypeScript, Vite 8, Ant Design 6, TanStack 
 | **서버 상태** | TanStack React Query | 5.90.21 |
 | **클라이언트 상태** | Zustand | 5.0.12 |
 | **폼 관리** | React Hook Form | 7.71.2 |
+| **폼 리졸버** | @hookform/resolvers | 5.2.2 |
 | **유효성 검증** | Zod | 4.3.6 |
 | **HTTP 클라이언트** | Axios | 1.13.6 |
 | **라우팅** | React Router DOM | 7.13.1 |
 | **차트** | Recharts | 3.8.0 |
 | **날짜** | Day.js | 1.11.20 |
+| **리치 텍스트** | React Quill New | 3.8.3 |
+| **XSS 방어** | DOMPurify | 3.3.3 |
 | **테스트** | Vitest + Testing Library | 4.1.0 |
 | **모킹** | MSW | 2.12.11 |
 | **코드 품질** | ESLint + Prettier | 10.0.3 / 3.8.1 |
@@ -121,11 +124,16 @@ flowdesk-admin-frontend/
    ├─ shared/                    # 공통 모듈 (API, 타입, 유틸, 에셋)
    │  ├─ api/
    │  │  ├─ axios.ts             # Axios 인스턴스 (baseURL, 기본 헤더)
-   │  │  └─ axios-interceptor.ts # 인터셉터 설정 인터페이스 (DI 패턴, FSD 준수)
+   │  │  ├─ axios-interceptor.ts # 인터셉터 설정 인터페이스 (DI 패턴, FSD 준수)
+   │  │  └─ query-client.ts      # QueryClient 공유 모듈 (retry: 1)
    │  ├─ assets/
    │  │  └─ logo.png             # 애플리케이션 로고
    │  ├─ types/
    │  │  └─ error-response.type.ts  # 공통 API 에러 응답 타입
+   │  ├─ ui/
+   │  │  └─ rich-text-editor/       # React Quill 기반 WYSIWYG 에디터
+   │  │     ├─ rich-text-editor.tsx
+   │  │     └─ rich-text-editor.module.css
    │  └─ utils/
    │     └─ api-error-message.ts    # 에러 코드→한국어 메시지 매핑 유틸
    │
@@ -502,26 +510,44 @@ flowdesk-admin-frontend/
       ├─ user/
       │  ├─ user-page.tsx        # 사용자 관리 페이지 (검색/필터 + 테이블 + CRUD 모달)
       │  └─ user-page.module.css
+      ├─ home/
+      │  ├─ home-page.tsx        # 홈 페이지 (온보딩 · 역할별 플로우 · 포트폴리오 · 아키텍처 개요)
+      │  └─ home-page.module.css
       ├─ tenant/
       │  ├─ tenant-page.tsx      # 테넌트 관리 페이지 (검색/필터 + 테이블 + CRUD 모달 + 삭제)
       │  └─ tenant-page.module.css
-      ├─ dashboard/
-      │  └─ dashboard-page.tsx   # 대시보드 페이지 (보호된 라우트)
+      ├─ forbidden/
+      │  └─ forbidden-page.tsx   # 403 권한 없음 에러 페이지
       ├─ super-dashboard/
       │  ├─ super-dashboard-page.tsx       # 슈퍼 관리자 대시보드 (전체 시스템 현황)
       │  └─ super-dashboard-page.module.css
       ├─ permission-catalog/
       │  ├─ permission-catalog-page.tsx    # 권한 카탈로그 (트리 기반 매트릭스 + 검색)
       │  └─ permission-catalog-page.module.css
+      ├─ admin-page-manage/
+      │  ├─ admin-page-manage-page.tsx    # RBAC 페이지 관리 (CRUD, 계층 구조)
+      │  └─ admin-page-manage-page.module.css
+      ├─ admin-action-manage/
+      │  ├─ admin-action-manage-page.tsx  # RBAC 액션 관리 (CRUD)
+      │  └─ admin-action-manage-page.module.css
+      ├─ admin-permission-manage/
+      │  ├─ admin-permission-manage-page.tsx # RBAC 권한 관리 (페이지+액션 조합)
+      │  └─ admin-permission-manage-page.module.css
       ├─ role-manage/
       │  ├─ role-manage-page.tsx           # 역할 관리 페이지 (CRUD, 권한 매핑, 사용자 할당)
       │  └─ role-manage-page.module.css
       ├─ tenant-status-manage/
       │  ├─ tenant-status-manage-page.tsx  # 상태 관리 페이지 (CRUD, 그룹별 Collapse, 요약 카드, 활성화/비활성화)
       │  └─ tenant-status-manage-page.module.css
-      └─ website-manage/
-         ├─ website-manage-page.tsx         # 웹사이트 관리 페이지 (검색/필터 + 테이블 + CRUD 모달)
-         └─ website-manage-page.module.css
+      ├─ website-manage/
+      │  ├─ website-manage-page.tsx        # 웹사이트 관리 페이지 (검색/필터 + 테이블 + CRUD 모달)
+      │  └─ website-manage-page.module.css
+      ├─ board-type-manage/
+      │  ├─ board-type-manage-page.tsx     # 게시판 타입 관리 페이지 (CRUD)
+      │  └─ board-type-manage-page.module.css
+      ├─ board-manage/
+      │  ├─ board-manage-page.tsx          # 게시글 관리 페이지 (RichTextEditor, 게시판 타입별 필터)
+      │  └─ board-manage-page.module.css
       ├─ block-manage/
       │  ├─ block-manage-page.tsx           # 차단 관리 페이지 (Tabs: IP/휴대폰/금칙어)
       │  ├─ block-manage-page.module.css
@@ -531,9 +557,12 @@ flowdesk-admin-frontend/
       ├─ counsel-dashboard/
       │  ├─ counsel-dashboard-page.tsx      # 상담 대시보드 (7개 통계 위젯, 기간 선택)
       │  └─ counsel-dashboard-page.module.css
-      └─ counsel-manage/
-         ├─ counsel-manage-page.tsx         # 상담 관리 (상태 카드, 필터, 테이블, 일괄 처리)
-         └─ counsel-manage-page.module.css
+      ├─ counsel-manage/
+      │  ├─ counsel-manage-page.tsx        # 상담 관리 (상태 카드, 필터, 테이블, 일괄 처리)
+      │  └─ counsel-manage-page.module.css
+      └─ counsel-calendar/
+         ├─ counsel-calendar-page.tsx       # 예약 캘린더 (월별 그리드, 드래그 앤 드롭)
+         └─ counsel-calendar-page.module.css
 ```
 
 ## 폴더/파일 구조 규칙 및 사용 가이드
@@ -638,6 +667,7 @@ features/{도메인명}/
 | `/` | — | — | — | `/login`으로 리다이렉트 |
 | `/login` | LoginPage | — | 불필요 | 로그인 페이지 (로그인 상태 시 `/home`으로 리다이렉트) |
 | `/signup` | SignupPage | — | 불필요 | 회원가입 페이지 (로그인 상태 시 `/home`으로 리다이렉트) |
+| `/403` | ForbiddenPage | — | 불필요 | 권한 없음 에러 페이지 (ProtectedRoute에서 미허용 경로 접근 시 리다이렉트) |
 | `/home` | HomePage | MainLayout | **필요** | 홈 (온보딩 · 역할별 플로우 · 포트폴리오 · 아키텍처 개요) |
 | `/mypage` | MypagePage | MainLayout | **필요** | 마이페이지 (프로필 정보, 역할/권한, 보안 설정) |
 | `/users` | UserPage | MainLayout | **필요** | 사용자 관리 (CRUD, 상태 변경, 비밀번호 초기화, 역할 설정) |
@@ -651,6 +681,8 @@ features/{도메인명}/
 | `/tenants/status` | `TenantStatusManagePage` | `MainLayout` | **필요** | 상태 관리 (CRUD, 그룹별 Collapse, 요약 카드, 활성화/비활성화) |
 | `/websites` | `WebsiteManagePage` | `MainLayout` | **필요** | 웹사이트 관리 (CRUD, 검색/필터, 상태 변경, 썸네일, URL 링크) |
 | `/security` | `BlockManagePage` | `MainLayout` | **필요** | 차단 관리 (IP/휴대폰/금칙어 탭, CRUD, 대량 등록, 차단 여부 확인) |
+| `/board-types` | `BoardTypeManagePage` | `MainLayout` | **필요** | 게시판 타입 관리 (CRUD) |
+| `/boards` | `BoardManagePage` | `MainLayout` | **필요** | 게시글 관리 (RichTextEditor, 게시판 타입별 필터, CRUD) |
 | `/counsels/dashboard` | `CounselDashboardPage` | `MainLayout` | **필요** | 상담 대시보드 (7개 통계 위젯, 기간 선택, 새로고침) |
 | `/counsels` | `CounselManagePage` | `MainLayout` | **필요** | 상담 관리 (상태 필터 카드, 목록, 상세/수정, 일괄 처리) |
 | `/counsels/calendar` | `CounselCalendarPage` | `MainLayout` | **필요** | 예약 캘린더 (월별 그리드, 드래그 앤 드롭 일정 변경, 상세 모달) |
@@ -685,7 +717,7 @@ features/{도메인명}/
 | RBAC 권한 관리 | ✅ 완료 | 권한 CRUD, 상세 보기(페이지/액션 Tag+code), 상태 변경, 삭제, 크로스 피처 합성(admin-page + admin-action) |
 | 권한 카탈로그 | ✅ 완료 | 페이지×액션 권한 매트릭스, **트리 구조** (parentId 기반 계층), 접기/펼치기, 검색 필터, 요약 통계 바, 스티키 컬럼, 행 스트라이핑/호버 |
 | 라우트 코드 스플리팅 | ✅ 완료 | React.lazy + Suspense 기반 라우트별 동적 import (번들 최적화) |
-| CSS 토큰 체계 | ✅ 완료 | CSS Custom Properties 29개 (:root), focus-visible 접근성 |
+| CSS 토큰 체계 | ✅ 완료 | CSS Custom Properties 23개 (:root), focus-visible 접근성 |
 | 에러 처리 | ✅ 완료 | AxiosError 타입 래핑 + 에러 코드 매핑 + 한국어 메시지 |
 | 반응형 디자인 | ✅ 완료 | 모바일 대응 (768px 브레이크포인트) |
 | Path Alias | ✅ 완료 | @app, @shared, @features, @pages, @widgets |

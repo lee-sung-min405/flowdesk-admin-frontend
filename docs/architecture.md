@@ -122,7 +122,8 @@ flowdesk-admin-frontend/
    ├─ shared/
    │  ├─ api/
    │  │  ├─ axios.ts                # Axios 인스턴스 (baseURL, 기본 헤더)
-   │  │  └─ axios-interceptor.ts    # 인터셉터 설정 (DI 패턴)
+   │  │  ├─ axios-interceptor.ts    # 인터셉터 설정 (DI 패턴)
+   │  │  └─ query-client.ts         # QueryClient 공유 모듈 (retry: 1)
    │  ├─ assets/
    │  │  └─ logo.png
    │  ├─ types/
@@ -170,6 +171,7 @@ flowdesk-admin-frontend/
    └─ pages/
       ├─ login/
       ├─ signup/
+      ├─ forbidden/                   # 403 에러 페이지
       ├─ home/
       ├─ mypage/
       ├─ user/
@@ -221,17 +223,21 @@ features/{도메인}/
 `src/app/App.tsx`에서 `BrowserRouter` + `Routes`로 구성한다. 모든 페이지는 `React.lazy`로 동적 import하며, `Suspense`로 로딩 UI를 보여준다.
 
 ```tsx
-// src/app/App.tsx 실제 구조
-const queryClient = new QueryClient({
+// src/shared/api/query-client.ts — QueryClient 공유 모듈
+import { QueryClient } from '@tanstack/react-query';
+
+export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 1000 * 60 * 5,   // 5분
-      gcTime: 1000 * 60 * 10,     // 10분
       retry: 1,
-      refetchOnWindowFocus: false,
     },
   },
 });
+```
+
+```tsx
+// src/app/App.tsx 실제 구조
+import { queryClient } from '@shared/api/query-client';
 
 <QueryClientProvider client={queryClient}>
   <BrowserRouter>
@@ -240,6 +246,7 @@ const queryClient = new QueryClient({
         {/* 공개 라우트 */}
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignupPage />} />
+        <Route path="/403" element={<ForbiddenPage />} />
 
         {/* 인증 필요 + MainLayout 적용 */}
         <Route element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
@@ -261,6 +268,7 @@ const queryClient = new QueryClient({
 | `/` | — | — | — | — | `/login`으로 리다이렉트 |
 | `/login` | `LoginPage` | `@pages/login/login-page` | 없음 | 불필요 | 로그인 (로그인 상태 시 `/home`으로 리다이렉트) |
 | `/signup` | `SignupPage` | `@pages/signup/signup-page` | 없음 | 불필요 | 회원가입 (로그인 상태 시 `/home`으로 리다이렉트) |
+| `/403` | `ForbiddenPage` | `@pages/forbidden/forbidden-page` | 없음 | 불필요 | 권한 없는 페이지 접근 시 403 에러 페이지 |
 | `/home` | `HomePage` | `@pages/home/home-page` | `MainLayout` | **필요** | 홈 (역할별 플로우, 포트폴리오, 아키텍처 개요) |
 | `/mypage` | `MypagePage` | `@pages/mypage/mypage-page` | `MainLayout` | **필요** | 마이페이지 (프로필, 역할/권한, 보안) |
 | `/users` | `UserPage` | `@pages/user/user-page` | `MainLayout` | **필요** | 사용자 관리 |
@@ -280,21 +288,58 @@ const queryClient = new QueryClient({
 | `/counsels` | `CounselManagePage` | `@pages/counsel-manage/counsel-manage-page` | `MainLayout` | **필요** | 상담 관리 |
 | `/counsels/calendar` | `CounselCalendarPage` | `@pages/counsel-calendar/counsel-calendar-page` | `MainLayout` | **필요** | 예약 캘린더 |
 
-총 22개 `<Route>` 정의: 공개 2 + 인증 필요 18 + 리다이렉트 1 + 레이아웃 래퍼 1.
+총 23개 `<Route>` 정의: 공개 3 (login, signup, 403) + 인증 필요 18 + 리다이렉트 1 + 레이아웃 래퍼 1.
 
 ### 3.3 ProtectedRoute
 
+인증과 인가를 모두 처리하는 라우트 가드이다.
+
 ```tsx
 // src/app/ProtectedRoute.tsx
+import { useAuthStore } from '@features/auth/model/auth.store';
+import { authStorage } from '@features/auth/lib/auth-storage';
+import { useMe } from '@features/auth/model/use-me';
+import type { MenuTree } from '@features/auth/types/auth.type';
+
+/** menuTree에서 모든 리프 노드의 path를 추출 */
+function collectPaths(tree: MenuTree[]): string[] {
+  const paths: string[] = [];
+  for (const node of tree) {
+    if (node.path) paths.push(node.path);
+    if (node.children?.length) paths.push(...collectPaths(node.children));
+  }
+  return paths;
+}
+
+/** 권한 검사를 건너뛰는 경로 */
+const PUBLIC_PATHS = ['/home', '/mypage'];
+
 export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const storeToken = useAuthStore((state) => state.accessToken);
   const isLoggedIn = !!storeToken || !!authStorage.getAccessToken();
-  return isLoggedIn ? children : <Navigate to="/login" replace />;
+  const { me, menuTree } = useMe();
+  const { pathname } = useLocation();
+
+  if (!isLoggedIn) return <Navigate to="/login" replace />;
+
+  // me가 아직 로드되지 않았거나 공통 경로는 통과
+  if (!me || PUBLIC_PATHS.includes(pathname)) return children;
+
+  // menuTree에서 허용된 경로 목록 추출
+  const allowedPaths = collectPaths(menuTree);
+  if (!allowedPaths.includes(pathname)) {
+    return <Navigate to="/403" replace />;
+  }
+
+  return children;
 }
 ```
 
-- Zustand 스토어 `accessToken` + `localStorage` 이중 체크
-- 미인증 시 `/login`으로 리다이렉트
+**동작 방식**:
+1. **인증 체크**: Zustand `accessToken` + `localStorage` 이중 체크 → 미인증 시 `/login`으로 리다이렉트
+2. **인가 체크**: `useMe()` → `menuTree`에서 `collectPaths()`로 허가된 모든 경로를 추출
+3. **공통 경로 우회**: `/home`, `/mypage`는 권한 검사 없이 통과 (`PUBLIC_PATHS`)
+4. **미허가 라우트**: 현재 `pathname`이 허가 목록에 없으면 `/403` (ForbiddenPage)으로 리다이렉트
 
 ### 3.4 MainLayout
 
@@ -332,6 +377,7 @@ export default function MainLayout() {
 
 - 로그인 상태(`Zustand accessToken` 또는 `localStorage`)이면 `/home`으로 리다이렉트
 - `<LoginForm />` (features/auth)을 렌더링
+- 로그인 전 `queryClient.clear()`로 이전 사용자의 캐시 데이터 완전 제거
 - 하단에 회원가입 링크 (`/signup`)
 
 #### SignupPage (`/signup`)
@@ -339,6 +385,11 @@ export default function MainLayout() {
 - 로그인 상태이면 `/home`으로 리다이렉트
 - `<SignupForm />` (features/auth)을 렌더링
 - 하단에 로그인 링크 (`/login`)
+
+#### ForbiddenPage (`/403`)
+
+- 권한이 없는 페이지에 접근할 때 `ProtectedRoute`에서 리다이렉트되는 에러 페이지
+- 403 Forbidden 안내 메시지 표시
 
 ### 4.2 인증 필요 페이지
 
@@ -562,7 +613,7 @@ interface HeaderProps {
 
 **구성 요소**:
 - 좌측: 토글 버튼 (`MenuFoldOutlined` / `MenuUnfoldOutlined`) + `<Breadcrumb />`
-- 우측: 테넌트 뱃지 (`me.user.corpName`) + 알림 Popover + 프로필 Dropdown
+- 우측: 테넌트 뱃지 (`me.user.tenantName > me.user.corpName`, corpName 존재 시 표시) + 알림 Popover + 프로필 Dropdown
 - 프로필 Dropdown 메뉴: 내 정보 (`/mypage`) / 비밀번호 변경 (모달) / 로그아웃
 - 스크롤 감지: `[data-scroll-area]` 요소의 scrollTop > 0 시 `data-scrolled` 속성 설정
 - 비밀번호 변경: `ChangePasswordForm` (features/auth) + Modal
@@ -917,14 +968,11 @@ export async function getUsersApi(params: GetUsersRequest): Promise<GetUsersResp
 ### 7.2 React Query 설정
 
 ```tsx
-// src/app/App.tsx
-const queryClient = new QueryClient({
+// src/shared/api/query-client.ts
+export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 1000 * 60 * 5,     // 5분
-      gcTime: 1000 * 60 * 10,       // 10분 (가비지 컬렉션)
       retry: 1,
-      refetchOnWindowFocus: false,
     },
   },
 });
@@ -1054,6 +1102,7 @@ export function setupAuthAxiosInterceptor() {
     onRefreshFailure: () => {
       authStorage.clearTokens();
       authStorage.clearMe();
+      queryClient.clear();            // React Query 캐시 전체 제거
       window.location.href = '/login';
     },
   });
@@ -1143,6 +1192,7 @@ export function useLogout() {
     authStorage.clearTokens();
     authStorage.clearMe();
     useAuthStore.getState().clearAuth();
+    queryClient.clear();                            // React Query 캐시 전체 제거
     navigate('/login', { replace: true });
   }, [navigate]);
 }
@@ -1159,6 +1209,7 @@ export function useLogoutAll() {
     authStorage.clearTokens();
     authStorage.clearMe();
     useAuthStore.getState().clearAuth();
+    queryClient.clear();                      // React Query 캐시 전체 제거
     navigate('/login', { replace: true });
   }, [navigate]);
 }
@@ -1369,6 +1420,7 @@ export interface SignupRequest {
   email: string;
   phone: string;
   password: string;
+  tenantName: string;
 }
 
 export interface SignupResponse {
@@ -1412,8 +1464,9 @@ z.object({
 
 ```tsx
 z.object({
-  companyName: z.string().min(1, '회사명을 입력하세요'),
+  companyName: z.string().min(1, '부서명을 입력하세요'),
   adminName: z.string().min(1, '관리자 이름을 입력하세요'),
+  tenantName: z.string().min(1, '테넌트 이름을 입력하세요'),
   email: z.string().min(1, '이메일을 입력하세요').email('올바른 이메일 형식이 아닙니다'),
   phone: z.string().min(1, '전화번호를 입력하세요'),
   password: z.string()
@@ -1454,7 +1507,7 @@ z.object({
 
 ```tsx
 z.object({
-  corpName: z.string().min(1, '회사명을 입력하세요').max(100, '회사명은 100자 이하로 입력하세요'),
+  corpName: z.string().min(1, '부서명을 입력하세요').max(100, '회사명은 100자 이하로 입력하세요'),
   userName: z.string().min(1, '이름을 입력하세요').max(50, '이름은 50자 이하로 입력하세요'),
   userEmail: z.string().min(1, '이메일을 입력하세요').email('올바른 이메일 형식이 아닙니다'),
   userTel: z.string().max(20, '전화번호는 20자 이하로 입력하세요').optional().or(z.literal('')),
@@ -1797,3 +1850,394 @@ export interface CounselDashboardResponse {
 | **board-type** | BoardTypeTable, BoardTypeDetail, BoardTypeCreateForm, BoardTypeEditForm | useBoardTypes, useBoardType, useCreateBoardType, useUpdateBoardType, useDeleteBoardType | createBoardTypeSchema, updateBoardTypeSchema |
 | **board** | PostTable, PostDetail, PostCreateForm, PostEditForm | usePosts, usePost, useCreatePost, useUpdatePost, useDeletePost | createPostSchema, updatePostSchema |
 | **counsel** | SummaryCards, StatusDistributionChart, EmployeeStatsChart, DailyTrendsChart, TopWebsitesChart, HourlyDistributionChart, UpcomingReservationsTable, CounselTable, CounselDetail, CounselEditForm, ReservationCalendar | useCounselDashboard, useCounsels, useCounsel, useUpdateCounsel, useDeleteCounsel, useUpdateCounselStatus, useCreateCounselMemo | — |
+
+---
+
+# 🔧 Architecture Deep Dive (추가 분석)
+
+> 기존 문서(섹션 1~10)의 내용을 보강하여, 프론트엔드 아키텍처를 시각적으로 이해할 수 있도록 Mermaid 다이어그램 기반으로 작성한다.
+
+---
+
+## 11. 요청 흐름 (Request Flow)
+
+### 11.1 일반 API 요청 시퀀스
+
+사용자가 페이지에 진입하여 데이터를 조회하는 전체 흐름이다.
+
+```mermaid
+sequenceDiagram
+    participant U as 사용자 (Browser)
+    participant R as React Router
+    participant PR as ProtectedRoute
+    participant Page as Page Component
+    participant RQ as React Query
+    participant Axios as Axios Instance
+    participant INT as Auth Interceptor
+    participant API as NestJS API
+
+    U->>R: URL 진입 (예: /users)
+    R->>PR: 라우트 매칭
+    PR->>PR: accessToken 존재 확인
+    alt 토큰 없음
+        PR-->>U: Navigate → /login
+    end
+    PR->>PR: menuTree에서 /users 경로 허용 확인
+    alt 권한 없음
+        PR-->>U: Navigate → /403
+    end
+    PR->>Page: children 렌더링 (UserPage)
+    Page->>RQ: useUsers({ page: 1, limit: 20 })
+    RQ->>Axios: GET /users?page=1&limit=20
+    Axios->>INT: 요청 인터셉터
+    INT->>INT: Authorization: Bearer {token} 헤더 추가
+    INT->>API: HTTPS 요청 전송
+    API-->>Axios: 200 OK + JSON 응답
+    Axios-->>RQ: response.data
+    RQ-->>Page: { data, isLoading, error }
+    Page-->>U: 테이블 렌더링
+```
+
+### 11.2 토큰 갱신 시퀀스 (401 → Refresh → 재시도)
+
+accessToken이 만료되어 401 응답을 받았을 때의 자동 갱신 흐름이다.
+
+```mermaid
+sequenceDiagram
+    participant Axios as Axios Instance
+    participant INT as Auth Interceptor
+    participant Queue as Failed Queue
+    participant API as NestJS API
+    participant Store as AuthStore + Storage
+
+    Axios->>API: GET /users (만료된 토큰)
+    API-->>INT: 401 Unauthorized
+
+    INT->>INT: isRefreshing = false 확인
+    INT->>INT: isRefreshing = true 설정
+
+    INT->>API: POST /auth/refresh-token { refreshToken }
+    API-->>INT: 200 { accessToken, refreshToken }
+
+    INT->>Store: authService.loginSuccess(data)
+    Note over Store: accessToken/refreshToken → localStorage<br/>setAccessToken → Zustand<br/>GET /auth/me → setMe
+
+    INT->>INT: isRefreshing = false 설정
+    INT->>Queue: 큐의 대기 요청들에 새 토큰 전달
+
+    INT->>API: GET /users (새 토큰으로 재시도)
+    API-->>Axios: 200 OK + 정상 응답
+```
+
+### 11.3 동시 401 요청 큐잉
+
+```mermaid
+sequenceDiagram
+    participant R1 as 요청 1 (users)
+    participant R2 as 요청 2 (roles)
+    participant R3 as 요청 3 (tenants)
+    participant INT as Auth Interceptor
+    participant Queue as failedQueue[]
+    participant API as NestJS API
+
+    R1->>API: GET /users (만료 토큰)
+    R2->>API: GET /roles (만료 토큰)
+    R3->>API: GET /tenants (만료 토큰)
+
+    API-->>INT: 401 (요청1)
+    Note over INT: isRefreshing = true<br/>refresh 시작
+
+    API-->>INT: 401 (요청2)
+    INT->>Queue: 요청2 큐에 대기
+
+    API-->>INT: 401 (요청3)
+    INT->>Queue: 요청3 큐에 대기
+
+    INT->>API: POST /auth/refresh-token
+    API-->>INT: 200 (새 토큰)
+
+    INT->>R1: 새 토큰으로 재시도
+    INT->>Queue: 큐 resolve → 요청2, 요청3 재시도
+    Queue->>R2: 새 토큰으로 재시도
+    Queue->>R3: 새 토큰으로 재시도
+```
+
+---
+
+## 12. 멀티테넌트 구조 (프론트엔드 관점)
+
+프론트엔드는 JWT 기반 테넌트 격리의 **소비자(consumer)** 역할이다. 백엔드가 JWT에서 `tenantId`를 추출하여 데이터를 격리하므로, 프론트엔드는 `tenantId`를 API에 직접 전달하지 않는다.
+
+### 12.1 슈퍼 관리자 vs 일반 테넌트 관리자
+
+| 구분 | 슈퍼 관리자 | 일반 테넌트 관리자 |
+|------|-----------|-----------------|
+| 접근 범위 | 모든 테넌트 데이터 | **자기 테넌트 데이터만** |
+| 메뉴 | `super.*` 메뉴 (대시보드, 테넌트관리, 페이지/액션/권한 관리) | 테넌트 내 메뉴 (사용자, 역할, 상담, 게시판 등) |
+| 테넌트 생성 | ✅ | ❌ |
+| 권한 정의 | 페이지/액션/퍼미션 CRUD | ❌ (부여된 권한만 사용) |
+| 대시보드 | `SuperDashboardPage` (전체 테넌트 통계) | `CounselDashboardPage` (자기 테넌트 상담 통계) |
+| API 경로 | `/super/*`, `/permissions/admin/*`, `/tenants` | `/users`, `/roles`, `/counsels`, `/boards` 등 |
+
+### 12.2 프론트엔드의 테넌트 인식
+
+프론트엔드에서 테넌트를 인식하는 핵심 데이터는 `MeResponse`이다:
+
+```
+MeResponse.user.tenantId   → 현재 사용자의 테넌트 ID
+MeResponse.user.tenantName → 테넌트 식별명 (로그인 시 입력)
+MeResponse.permissions     → 해당 테넌트에서 부여된 권한
+MeResponse.menuTree        → 해당 테넌트에서 접근 가능한 전체 메뉴
+```
+
+프론트엔드는 `tenantId`를 직접 API에 전달하지 않는다. 서버가 JWT에서 추출하므로, **프론트엔드는 테넌트 격리의 소비자**이며 격리 로직 자체는 백엔드 책임이다.
+
+---
+
+## 13. RBAC 권한 시스템 (프론트엔드 관점)
+
+### 13.1 권한 데이터 소비 흐름
+
+서버가 `MeResponse.permissions`에 `{pageName}.{action}` 형식의 키를 `Record<string, boolean>`으로 반환하면, 프론트엔드는 이를 3개 지점에서 소비한다.
+
+```mermaid
+flowchart TB
+    F["MeResponse.permissions<br/>{ 'users.read': true,<br/>'users.create': true,<br/>'roles.read': true,<br/>'counsels.read': true,<br/>'counsels.update': true }"]
+
+    F --> G["filterMenuTree()<br/>read 권한이 있는 메뉴만 필터"]
+    G --> H["Sidebar 렌더링<br/>허용된 메뉴만 표시"]
+
+    F --> I["hasPermission() 체크<br/>버튼/기능 노출 제어"]
+    I --> J["UI 렌더링<br/>생성 버튼 표시/숨김"]
+
+    F --> K["ProtectedRoute<br/>허용 경로 목록 생성"]
+    K --> L["경로 접근 제어<br/>비허용 → /403"]
+
+    style F fill:#fff9c4,stroke:#f9a825
+```
+
+### 13.2 프론트엔드 권한 적용 지점
+
+| 적용 지점 | 메커니즘 | 코드 위치 |
+|----------|---------|----------|
+| **라우트 접근** | `ProtectedRoute` → `collectPaths(menuTree)` → `allowedPaths.includes(pathname)` | `src/app/ProtectedRoute.tsx` |
+| **사이드바 메뉴** | `filterMenuTree(menuTree, permissions)` → `read` 권한 기반 필터 | `src/features/auth/lib/permission.ts` |
+| **페이지 내 버튼** | `useMe().hasPermission(pageName, 'create')` → 조건부 렌더링 | 각 페이지 컴포넌트 |
+| **Breadcrumb** | `buildPathNameMap(menuTree)` → 권한 있는 경로만 이름 표시 | `src/widgets/breadcrumb/breadcrumb.tsx` |
+
+### 13.3 권한 관리 단계 (프론트엔드 페이지)
+
+```mermaid
+flowchart LR
+    subgraph Step1["1단계: 페이지 정의"]
+        P["AdminPageManagePage<br/>/permissions/admin/pages<br/>pageName, path, displayName 등록"]
+    end
+
+    subgraph Step2["2단계: 액션 정의"]
+        Act["AdminActionManagePage<br/>/permissions/admin/actions<br/>read, create, update, delete 등록"]
+    end
+
+    subgraph Step3["3단계: 퍼미션 조합"]
+        Perm["AdminPermissionManagePage<br/>/permissions/admin/permissions<br/>Page × Action 조합 생성"]
+    end
+
+    subgraph Step4["4단계: 역할에 부여"]
+        Role["RoleManagePage<br/>/roles<br/>역할에 퍼미션 할당"]
+    end
+
+    subgraph Step5["5단계: 사용자에 역할 부여"]
+        User["UserPage<br/>/users<br/>사용자에 역할 할당"]
+    end
+
+    Step1 --> Step2 --> Step3 --> Step4 --> Step5
+
+    style Step1 fill:#e3f2fd,stroke:#1565c0
+    style Step2 fill:#e8f5e9,stroke:#2e7d32
+    style Step3 fill:#fff3e0,stroke:#e65100
+    style Step4 fill:#f3e5f5,stroke:#7b1fa2
+    style Step5 fill:#fce4ec,stroke:#c62828
+```
+
+---
+
+## 14. 프론트엔드 구조 (FSD 아키텍처)
+
+### 14.1 FSD 레이어 다이어그램
+
+Feature-Sliced Design의 단방향 의존성 규칙을 시각화한다. **상위 레이어만 하위 레이어를 import**할 수 있다.
+
+```mermaid
+graph TB
+    subgraph AppLayer["app 레이어"]
+        App["App.tsx<br/>라우터, Provider, 인터셉터 초기화"]
+        Main["main.tsx<br/>앱 마운트 + 인터셉터 설정"]
+        Layout["main-layout.tsx<br/>Sidebar + Header + Outlet"]
+        Protected["ProtectedRoute.tsx<br/>인증/권한 가드"]
+    end
+
+    subgraph PagesLayer["pages 레이어"]
+        LP["LoginPage"]
+        HP["HomePage"]
+        UP["UserPage"]
+        TP["TenantPage"]
+        RP["RoleManagePage"]
+        BP["BoardManagePage"]
+        CP["CounselManagePage"]
+        Other["... (18개 페이지)"]
+    end
+
+    subgraph WidgetsLayer["widgets 레이어"]
+        Sidebar["Sidebar<br/>동적 메뉴, 아이콘 매핑"]
+        Header["Header<br/>Breadcrumb, 프로필, 알림"]
+        Breadcrumb["Breadcrumb<br/>경로 기반 자동 생성"]
+    end
+
+    subgraph FeaturesLayer["features 레이어 (15개 슬라이스)"]
+        AuthFeat["auth<br/>로그인/로그아웃/토큰/프로필"]
+        UserFeat["user<br/>사용자 CRUD"]
+        TenantFeat["tenant<br/>테넌트 CRUD"]
+        RoleFeat["role<br/>역할 CRUD + 권한할당"]
+        CounselFeat["counsel<br/>상담 CRUD + 대시보드"]
+        BoardFeat["board<br/>게시글 CRUD"]
+        SecurityFeat["security<br/>IP/HP/Word 차단"]
+        OtherFeat["... (8개 슬라이스)"]
+    end
+
+    subgraph SharedLayer["shared 레이어"]
+        API["api/<br/>axios, query-client, interceptor"]
+        UI["ui/<br/>RichTextEditor 등 공통 컴포넌트"]
+        Utils["utils/<br/>에러 메시지, 유틸리티"]
+        Types["types/<br/>ErrorResponse 등 공통 타입"]
+    end
+
+    AppLayer -->|"import"| PagesLayer
+    AppLayer -->|"import"| WidgetsLayer
+    AppLayer -->|"import"| FeaturesLayer
+    AppLayer -->|"import"| SharedLayer
+    PagesLayer -->|"import"| FeaturesLayer
+    PagesLayer -->|"import"| SharedLayer
+    WidgetsLayer -->|"import"| FeaturesLayer
+    WidgetsLayer -->|"import"| SharedLayer
+    FeaturesLayer -->|"import"| SharedLayer
+
+    FeaturesLayer -.->|"❌ 금지"| PagesLayer
+    SharedLayer -.->|"❌ 금지"| FeaturesLayer
+
+    style AppLayer fill:#e3f2fd,stroke:#1565c0
+    style PagesLayer fill:#e8f5e9,stroke:#2e7d32
+    style WidgetsLayer fill:#fff3e0,stroke:#e65100
+    style FeaturesLayer fill:#f3e5f5,stroke:#7b1fa2
+    style SharedLayer fill:#fce4ec,stroke:#c62828
+```
+
+### 14.2 Feature Slice 내부 구조
+
+각 feature slice는 4개의 세그먼트로 구성된다.
+
+```mermaid
+graph TB
+    subgraph FeatureSlice["feature/user (예시)"]
+        direction TB
+        Index["index.ts<br/>Public API (re-export)"]
+
+        subgraph APISegment["api/"]
+            Endpoint["user.endpoint.ts<br/>URL 상수 정의"]
+            GetUsers["get-users.api.ts<br/>API 호출 함수"]
+            CreateUser["create-user.api.ts"]
+            OtherAPI["...기타 API 함수"]
+        end
+
+        subgraph ModelSegment["model/"]
+            UseUsers["use-users.ts<br/>useQuery 훅"]
+            UseCreateUser["use-create-user.ts<br/>useMutation 훅"]
+            OtherHook["...기타 훅"]
+        end
+
+        subgraph TypesSegment["types/"]
+            UserType["user.type.ts<br/>TS 인터페이스"]
+            UserSchema["user.schema.ts<br/>Zod 스키마"]
+        end
+
+        subgraph UISegment["ui/"]
+            UserTable["user-table.tsx"]
+            UserDetail["user-detail.tsx"]
+            UserCreateForm["user-create-form.tsx"]
+            UserEditForm["user-edit-form.tsx"]
+        end
+    end
+
+    Index --> APISegment & ModelSegment & TypesSegment & UISegment
+    ModelSegment -->|"import"| APISegment
+    ModelSegment -->|"import"| TypesSegment
+    UISegment -->|"import"| ModelSegment
+    UISegment -->|"import"| TypesSegment
+
+    style FeatureSlice fill:#f5f5f5,stroke:#616161
+    style APISegment fill:#e3f2fd,stroke:#1565c0
+    style ModelSegment fill:#e8f5e9,stroke:#2e7d32
+    style TypesSegment fill:#fff3e0,stroke:#e65100
+    style UISegment fill:#f3e5f5,stroke:#7b1fa2
+```
+
+### 14.3 인터셉터 DI와 FSD 레이어 규칙
+
+`shared` 레이어가 `features` 레이어의 `authStorage`를 직접 import하면 FSD 단방향 규칙 위반이다. 이를 해결하기 위해 **의존성 주입(DI)** 패턴을 사용한다.
+
+```mermaid
+flowchart TB
+    subgraph SharedLayer["shared 레이어"]
+        AxiosInt["axios-interceptor.ts<br/>AuthInterceptorDeps 인터페이스 정의<br/>setupAuthInterceptor(deps) 함수"]
+    end
+
+    subgraph FeaturesLayer["features/auth 레이어"]
+        AuthStorage["auth-storage.ts<br/>localStorage 접근"]
+        AuthService["auth.service.ts<br/>loginSuccess, clearAuth"]
+        SetupInt["setup-auth-interceptor.ts<br/>setupAuthAxiosInterceptor()"]
+    end
+
+    subgraph AppLayer["app 레이어"]
+        MainTS["main.tsx<br/>setupAuthAxiosInterceptor() 호출"]
+    end
+
+    MainTS -->|"호출"| SetupInt
+    SetupInt -->|"의존성 주입"| AxiosInt
+    SetupInt -->|"import"| AuthStorage
+    SetupInt -->|"import"| AuthService
+
+    AxiosInt -.->|"❌ 직접 import 금지"| AuthStorage
+    FeaturesLayer -->|"✅ import 허용"| SharedLayer
+
+    style SharedLayer fill:#fce4ec,stroke:#c62828
+    style FeaturesLayer fill:#f3e5f5,stroke:#7b1fa2
+    style AppLayer fill:#e3f2fd,stroke:#1565c0
+```
+
+### 14.4 데이터 흐름 종합 (페이지 렌더링 사이클)
+
+사용자가 `/users` 페이지에 접근하여 데이터가 화면에 표시되기까지의 전체 데이터 흐름이다.
+
+```mermaid
+flowchart TB
+    A["URL 진입: /users"] --> B["React Router 매칭"]
+    B --> C["ProtectedRoute"]
+    C -->|"토큰 없음"| D["Navigate → /login"]
+    C -->|"권한 없음"| E["Navigate → /403"]
+    C -->|"통과"| F["MainLayout 렌더링"]
+
+    F --> G["Sidebar<br/>useMe() → menuTree<br/>filterMenuTree() → 메뉴 렌더링"]
+    F --> H["Header<br/>Breadcrumb + 프로필"]
+    F --> I["Outlet → UserPage"]
+
+    I --> J["useUsers({ page, limit, q })<br/>React Query useQuery"]
+    J --> K["getUsersApi(params)<br/>Axios GET /users"]
+    K --> L["요청 인터셉터<br/>Bearer 토큰 첨부"]
+    L --> O["API 서버 응답<br/>JSON 데이터"]
+    O --> P["React Query 캐시"]
+    P --> Q["UserTable 렌더링<br/>Ant Design Table"]
+    Q --> R["사용자에게 표시"]
+
+    style A fill:#e3f2fd,stroke:#1565c0
+    style F fill:#fff3e0,stroke:#e65100
+    style J fill:#f3e5f5,stroke:#7b1fa2
+    style R fill:#fff9c4,stroke:#f9a825
+```
